@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": false
+  },
+  "imports": {
+    "mongodb": "npm:mongodb@6.3.0"
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-env server.tsx",
+    "dev": "deno run --allow-net --allow-env --watch server.tsx"
+  }
+}

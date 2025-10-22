@@ -1,0 +1,12 @@
+{
+  "name": "btm-travel-crm",
+  "description": "BTM Travel CRM Backend - Pure Deno + MongoDB",
+  "entrypoint": "server.tsx",
+  "envVars": [],
+  "exclude": [
+    ".git",
+    "*.log",
+    ".DS_Store",
+    "README.md"
+  ]
+}

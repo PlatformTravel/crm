@@ -1,0 +1,66 @@
+========================================
+  START YOUR BACKEND IN 30 SECONDS!
+========================================
+
+ERROR YOU'RE SEEING:
+→ "Failed to fetch"
+→ "Cannot connect to backend"
+
+WHY?
+→ Backend server isn't running yet!
+
+FIX IT NOW:
+→ Open a NEW terminal
+→ Copy and paste this command:
+
+cd backend && deno run --allow-net --allow-env server.tsx
+
+→ Wait for "Server running" message
+→ Refresh your browser
+→ Done! ✅
+
+========================================
+
+YOU NEED 2 TERMINALS RUNNING:
+
+Terminal 1 (Frontend):
+  npm run dev
+
+Terminal 2 (Backend):
+  cd backend && deno run --allow-net --allow-env server.tsx
+
+========================================
+
+DON'T HAVE DENO?
+
+Install it first (1 minute):
+
+Windows:
+  irm https://deno.land/install.ps1 | iex
+
+Mac/Linux:
+  curl -fsSL https://deno.land/install.sh | sh
+
+Then restart terminal and run backend command.
+
+========================================
+
+THAT'S IT!
+
+Your CRM runs locally:
+→ No Supabase deployment needed
+→ No cloud setup
+→ Just Deno + MongoDB
+
+Login:
+  Username: admin
+  Password: admin123
+
+========================================
+
+📚 More Help:
+→ ⚡_START_BACKEND_NOW.md
+→ QUICK_START.md
+→ 🎯_FIX_APPLIED_READ_THIS.md
+
+🚀 Start the backend and refresh your browser!

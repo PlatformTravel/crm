@@ -1,0 +1,26 @@
+╔═══════════════════════════════════════════════════════════╗
+║                     TL;DR - FIX NOW!                      ║
+╚═══════════════════════════════════════════════════════════╝
+
+ERROR: "Failed to fetch"
+
+WHY: Backend not running
+
+FIX:
+─────────────────────────────────────────────────────────────
+Windows:    Double-click "start-all.bat"
+Mac/Linux:  Run "./start-all.sh"
+─────────────────────────────────────────────────────────────
+
+OR manually in new terminal:
+  cd backend && deno run --allow-net --allow-env server.tsx
+
+DONE! Refresh browser. ✅
+
+Need Deno?
+  Windows:  irm https://deno.land/install.ps1 | iex
+  Mac/Linux: curl -fsSL https://deno.land/install.sh | sh
+
+More help: ❗_SOLUTION_TO_YOUR_ERROR.md
+
+╚═══════════════════════════════════════════════════════════╝

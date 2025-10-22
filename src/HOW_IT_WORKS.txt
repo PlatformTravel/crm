@@ -1,0 +1,95 @@
+═══════════════════════════════════════════════════════════
+  HOW YOUR CRM WORKS - Visual Guide
+═══════════════════════════════════════════════════════════
+
+WHAT YOU HAVE NOW (Only Frontend):
+┌─────────────┐
+│   Browser   │  ← You can see this
+│ localhost:  │
+│    3000     │
+└──────┬──────┘
+       │
+       │ Trying to connect...
+       │
+       ▼
+     ❌ NOTHING ❌  ← Backend NOT RUNNING!
+     (localhost:8000)
+
+
+WHAT YOU NEED (Both Running):
+┌─────────────┐
+│   Browser   │  ← Frontend (React)
+│ localhost:  │
+│    3000     │
+└──────┬──────┘
+       │
+       │ ✅ Connected!
+       │
+       ▼
+┌─────────────┐
+│   Backend   │  ← Backend (Deno) - YOU NEED TO START THIS!
+│ localhost:  │
+│    8000     │
+└──────┬──────┘
+       │
+       │ ✅ Connected!
+       │
+       ▼
+┌─────────────┐
+│  MongoDB    │  ← Database (Cloud) - Already running
+│   Atlas     │
+└─────────────┘
+
+
+═══════════════════════════════════════════════════════════
+  WHY THE ERROR HAPPENS
+═══════════════════════════════════════════════════════════
+
+Your browser (localhost:3000) is trying to talk to the backend
+(localhost:8000), but the backend ISN'T LISTENING because you
+haven't started it yet!
+
+It's like calling a phone number when nobody picks up!
+
+═══════════════════════════════════════════════════════════
+  THE FIX
+═══════════════════════════════════════════════════════════
+
+START THE BACKEND SERVER!
+
+Easiest way:
+  Windows: Double-click "start-all.bat"
+  Mac/Linux: Run "./start-all.sh"
+
+Manual way:
+  Open new terminal → cd backend → deno run --allow-net --allow-env server.tsx
+
+═══════════════════════════════════════════════════════════
+  WHAT HAPPENS AFTER YOU START IT
+═══════════════════════════════════════════════════════════
+
+Terminal 1 (Frontend):
+  VITE ready in ...ms
+  ➜  Local:   http://localhost:3000/  ✅ RUNNING
+
+Terminal 2 (Backend):
+  🚀 BTM Travel CRM Server running!
+  Listening on http://localhost:8000/  ✅ RUNNING
+
+Browser:
+  → Can now connect to backend
+  → "Failed to fetch" error GONE! ✅
+  → Login screen appears
+  → You can use the CRM! 🎉
+
+═══════════════════════════════════════════════════════════
+  REMEMBER
+═══════════════════════════════════════════════════════════
+
+Keep BOTH terminal windows open and running:
+  ✅ Terminal 1: Frontend (npm run dev)
+  ✅ Terminal 2: Backend (deno server)
+
+Close either one → App stops working!
+
+═══════════════════════════════════════════════════════════

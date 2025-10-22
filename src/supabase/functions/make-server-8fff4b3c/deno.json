@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": false
+  },
+  "imports": {
+    "mongodb": "npm:mongodb@6.3.0"
+  }
+}

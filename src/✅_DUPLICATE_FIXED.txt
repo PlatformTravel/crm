@@ -1,0 +1,31 @@
+
+═══════════════════════════════════════════════════════════════════════
+                      ✅ DUPLICATE FIXED!
+═══════════════════════════════════════════════════════════════════════
+
+ERROR:
+------
+The symbol "fetchPromotions" has already been declared
+
+
+FIX:
+----
+✅ Removed duplicate fetchPromotions function (stub at line 462)
+✅ Kept the real fetchPromotions function (at line 965)
+✅ Updated real function to handle demo mode silently
+
+
+WHAT I DID:
+-----------
+1. Found TWO fetchPromotions functions in AdminSettings.tsx
+2. Removed the stub I accidentally added
+3. Updated the real function to fail silently in demo mode
+
+
+═══════════════════════════════════════════════════════════════════════
+
+                  🎉 REFRESH YOUR BROWSER NOW!
+                  
+                  Login: admin / admin123
+
+═══════════════════════════════════════════════════════════════════════
