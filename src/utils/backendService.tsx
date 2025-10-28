@@ -143,8 +143,22 @@ export const backendService = {
     });
   },
 
+  async importCustomers(customers: any[]) {
+    return backendFetch('/database/customers/import', {
+      method: 'POST',
+      body: JSON.stringify({ records: customers }),
+    });
+  },
+
   async assignClients(payload: { clientIds?: string[], agentId: string, filters?: any }) {
     return backendFetch('/database/clients/assign', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async assignCustomers(payload: { customerIds?: string[], agentId: string, agentName?: string, count?: number, filters?: any }) {
+    return backendFetch('/database/customers/assign', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -336,19 +350,35 @@ export const backendService = {
 
   // Archive - Type-specific helpers
   async getArchivedContacts() {
-    const response = await this.getArchive('contact');
-    return {
-      success: response.success,
-      contacts: response.archives || []
-    };
+    try {
+      const response = await this.getArchive('contact');
+      return {
+        success: response.success,
+        contacts: response.archives || []
+      };
+    } catch (error) {
+      // Silently return empty array if backend not available
+      return {
+        success: false,
+        contacts: []
+      };
+    }
   },
 
   async getArchivedCustomers() {
-    const response = await this.getArchive('customer');
-    return {
-      success: response.success,
-      customers: response.archives || []
-    };
+    try {
+      const response = await this.getArchive('customer');
+      return {
+        success: response.success,
+        customers: response.archives || []
+      };
+    } catch (error) {
+      // Silently return empty array if backend not available
+      return {
+        success: false,
+        customers: []
+      };
+    }
   },
 
   async archiveContact(contact: any) {
@@ -421,6 +451,12 @@ export const backendService = {
     return backendFetch(`/database/customers/assigned/${agentId}`);
   },
 
+  async migrateCustomers() {
+    return backendFetch('/database/customers/migrate', {
+      method: 'POST',
+    });
+  },
+
   async addCustomer(customer: any) {
     return backendFetch('/customers', {
       method: 'POST',
@@ -431,17 +467,6 @@ export const backendService = {
   async clearCustomers() {
     return backendFetch('/customers/clear', {
       method: 'DELETE',
-    });
-  },
-
-  async getArchivedCustomers() {
-    return backendFetch('/customers/archived');
-  },
-
-  async archiveCustomer(customer: any, archivedBy?: string) {
-    return backendFetch('/customers/archived', {
-      method: 'POST',
-      body: JSON.stringify({ customer, archivedBy }),
     });
   },
 

@@ -1649,8 +1649,13 @@ Deno.serve(async (req) => {
     if (path === '/database/clients' && req.method === 'GET') {
       const collection = await getCollection(Collections.NUMBERS_DATABASE);
       const clients = await collection.find({ status: { $ne: 'assigned' } }).toArray();
+      const convertedClients = convertMongoDocs(clients);
       return new Response(
-        JSON.stringify({ success: true, clients: convertMongoDocs(clients) }),
+        JSON.stringify({ 
+          success: true, 
+          clients: convertedClients,
+          records: convertedClients  // For consistency with customers endpoint
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -1776,7 +1781,14 @@ Deno.serve(async (req) => {
     // ==================== DATABASE - CUSTOMERS ====================
     if (path === '/database/customers' && req.method === 'GET') {
       const collection = await getCollection(Collections.CUSTOMERS_DATABASE);
-      const customers = await collection.find({}).toArray();
+      // Only return unassigned customers (available for assignment)
+      const customers = await collection.find({
+        $or: [
+          { assignedTo: { $exists: false } },
+          { assignedTo: null },
+          { assignedTo: '' }
+        ]
+      }).toArray();
       return new Response(
         JSON.stringify({ success: true, records: convertMongoDocs(customers) }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1792,6 +1804,9 @@ Deno.serve(async (req) => {
         importedAt: new Date().toISOString(),
         customerType: customer.customerType || 'Retails',
         flightInfo: customer.flightInfo || '',
+        assignedTo: null,
+        assignedAt: null,
+        assignedBy: null,
       }));
       
       if (newCustomers.length > 0) {
@@ -1809,37 +1824,87 @@ Deno.serve(async (req) => {
 
     if (path === '/database/customers/assign' && req.method === 'POST') {
       const body = await req.json();
-      const { agentId, agentName, count, filters } = body;
+      const { customerIds, agentId, agentName, count, filters } = body;
+      
+      console.log('[ASSIGN] Customer assignment request:', { customerIds, agentId, count, filters });
       
       const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
       
-      // Build query based on filters
-      const query: any = {};
-      if (filters) {
-        if (filters.customerType && filters.customerType.length > 0) {
-          query.customerType = { $in: filters.customerType };
-        }
-        if (filters.flightInfo) {
-          query.flightInfo = { $regex: filters.flightInfo, $options: 'i' };
-        }
-      }
+      // Debug: Check total customers and their assignment status
+      const totalCustomers = await customersCollection.countDocuments({});
+      const allCustomersSample = await customersCollection.find({}).limit(5).toArray();
+      console.log('[DEBUG] Total customers in DB:', totalCustomers);
+      console.log('[DEBUG] Sample customers:', allCustomersSample.map(c => ({ id: c.id, assignedTo: c.assignedTo })));
       
-      const customersToAssign = await customersCollection
-        .find(query)
-        .limit(count || 100)
-        .toArray();
+      let customersToAssign;
       
-      if (customersToAssign.length === 0) {
+      if (customerIds && customerIds.length > 0) {
+        // Debug: Check if these IDs exist at all
+        const allMatchingIds = await customersCollection.find({ id: { $in: customerIds } }).toArray();
+        console.log('[DEBUG] Found customers with matching IDs:', allMatchingIds.length);
+        console.log('[DEBUG] Their assignment status:', allMatchingIds.map(c => ({ id: c.id, assignedTo: c.assignedTo })));
+        
+        // Specific customer IDs provided - only assign if not already assigned
+        customersToAssign = await customersCollection
+          .find({ 
+            id: { $in: customerIds },
+            $or: [
+              { assignedTo: { $exists: false } },
+              { assignedTo: null },
+              { assignedTo: '' }
+            ]
+          })
+          .toArray();
+        
+        console.log('[DEBUG] Customers available for assignment:', customersToAssign.length);
+      } else if (filters || count) {
+        // Build query based on filters - only get unassigned customers
+        const query: any = {
+          $or: [
+            { assignedTo: { $exists: false } },
+            { assignedTo: null },
+            { assignedTo: '' }
+          ]
+        };
+        
+        if (filters) {
+          if (filters.customerType && filters.customerType.length > 0) {
+            query.customerType = { $in: filters.customerType };
+          }
+          if (filters.flightInfo) {
+            query.flightInfo = { $regex: filters.flightInfo, $options: 'i' };
+          }
+        }
+        
+        customersToAssign = await customersCollection
+          .find(query)
+          .limit(count || 100)
+          .toArray();
+      } else {
         return new Response(
-          JSON.stringify({ success: false, error: 'No customers match criteria' }),
+          JSON.stringify({ success: false, error: 'No customers or filters specified' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      // For now, just return success (assignment logic can be added later)
+      if (customersToAssign.length === 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'No available numbers match criteria' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Update customers with assignment info
+      const assignmentDate = new Date().toISOString();
+      await customersCollection.updateMany(
+        { id: { $in: customersToAssign.map((c: any) => c.id) } },
+        { $set: { assignedTo: agentId, assignedAt: assignmentDate, assignedBy: agentName } }
+      );
+      
       return new Response(
         JSON.stringify({ 
           success: true, 
+          assigned: customersToAssign.length,
           assignedCount: customersToAssign.length,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1852,6 +1917,39 @@ Deno.serve(async (req) => {
       await collection.deleteOne({ id });
       return new Response(
         JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Migration endpoint to fix customer assignedTo fields
+    if (path === '/database/customers/migrate' && req.method === 'POST') {
+      const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
+      
+      // Update all customers that don't have assignedTo field or have it undefined
+      const result = await customersCollection.updateMany(
+        { 
+          $or: [
+            { assignedTo: { $exists: false } },
+            { assignedTo: undefined }
+          ]
+        },
+        { 
+          $set: { 
+            assignedTo: null,
+            assignedAt: null,
+            assignedBy: null
+          } 
+        }
+      );
+      
+      console.log('[MIGRATION] Fixed customer records:', result.modifiedCount);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Fixed ${result.modifiedCount} customer records`,
+          modifiedCount: result.modifiedCount
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -2778,109 +2876,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ==================== NUMBERS DATABASE (CLIENTS) ====================
-    if (path === '/database/clients' && req.method === 'GET') {
-      const collection = await getCollection(Collections.NUMBERS_DATABASE);
-      const clients = await collection.find({}).toArray();
-      return new Response(
-        JSON.stringify({ success: true, clients: convertMongoDocs(clients) }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
-    if (path === '/database/clients/import' && req.method === 'POST') {
-      const body = await req.json();
-      const collection = await getCollection(Collections.NUMBERS_DATABASE);
-      
-      const clientsToImport = body.clients.map((client: any) => ({
-        ...client,
-        id: client.id || generateId(),
-        uploadedAt: new Date().toISOString(),
-        status: 'available',
-      }));
-      
-      await collection.insertMany(clientsToImport);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Imported ${clientsToImport.length} clients`,
-          count: clientsToImport.length
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (path === '/database/clients/assign' && req.method === 'POST') {
-      const body = await req.json();
-      const { clientIds, agentId, filters } = body;
-      
-      const numbersCollection = await getCollection(Collections.NUMBERS_DATABASE);
-      const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
-      
-      let clientsToAssign;
-      
-      if (clientIds && clientIds.length > 0) {
-        // Assign specific clients by ID
-        clientsToAssign = await numbersCollection.find({ 
-          id: { $in: clientIds },
-          status: 'available' 
-        }).toArray();
-      } else if (filters) {
-        // Assign based on filters (customerType, airplane, etc.)
-        const query: any = { status: 'available' };
-        if (filters.customerType) query.customerType = filters.customerType;
-        if (filters.airplane) query.airplane = filters.airplane;
-        if (filters.limit) {
-          clientsToAssign = await numbersCollection.find(query).limit(filters.limit).toArray();
-        } else {
-          clientsToAssign = await numbersCollection.find(query).toArray();
-        }
-      } else {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Either clientIds or filters must be provided' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (clientsToAssign.length === 0) {
-        return new Response(
-          JSON.stringify({ success: true, assigned: 0, message: 'No available clients to assign' }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Create assignments
-      const assignments = clientsToAssign.map((client: any) => ({
-        id: generateId(),
-        agentId,
-        numberId: client.id,
-        numberData: client,
-        assignedAt: new Date().toISOString(),
-        status: 'assigned',
-        called: false,
-        claimedBy: null,
-        claimedAt: null,
-      }));
-      
-      await assignmentsCollection.insertMany(assignments);
-      
-      // Update client status to 'assigned'
-      const clientIdsToUpdate = clientsToAssign.map((c: any) => c.id);
-      await numbersCollection.updateMany(
-        { id: { $in: clientIdsToUpdate } },
-        { $set: { status: 'assigned' } }
-      );
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          assigned: assignments.length,
-          message: `Assigned ${assignments.length} numbers to agent`
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     if (path.match(/^\/database\/clients\/[^/]+$/) && req.method === 'DELETE') {
       const id = path.split('/')[3];

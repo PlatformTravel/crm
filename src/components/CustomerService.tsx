@@ -284,7 +284,8 @@ export function CustomerService() {
           }
         }
       } catch (error) {
-        console.error('[CUSTOMER SERVICE] Error loading archived customers:', error);
+        // Silently ignore errors loading archived customers - they're optional
+        setArchivedCustomers([]);
       }
     };
 

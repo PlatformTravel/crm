@@ -665,7 +665,7 @@ export function AdminSettings() {
 
       // Import all customers in one call
       try {
-        const data = await backendService.addCustomer({ customers });
+        const data = await backendService.importCustomers(customers);
         if (data.success) {
           successCount = customers.length;
         } else {

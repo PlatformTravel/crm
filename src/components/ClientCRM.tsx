@@ -201,12 +201,17 @@ export function ClientCRM() {
 
     const loadArchivedContacts = async () => {
       try {
+        // Archive functionality is now handled by the ArchiveManager component in Manager Portal
+        // Silently attempt to load archived contacts, but don't fail if backend isn't ready
         const data = await backendService.getArchivedContacts();
-        if (data.contacts && Array.isArray(data.contacts)) {
+        if (data?.contacts && Array.isArray(data.contacts)) {
           setArchivedContacts(data.contacts);
+        } else {
+          setArchivedContacts([]);
         }
       } catch (error) {
-        console.error('[CRM] Failed to load archived contacts:', error);
+        // Silently ignore errors - archives are optional for agents
+        setArchivedContacts([]);
       } finally {
         setIsLoadingContacts(false);
       }
@@ -321,9 +326,14 @@ export function ClientCRM() {
       
       setContacts(userContacts);
       
-      // Reload archived contacts
-      const archiveData = await backendService.getArchivedContacts();
-      setArchivedContacts(archiveData.contacts || []);
+      // Reload archived contacts (silently handle errors)
+      try {
+        const archiveData = await backendService.getArchivedContacts();
+        setArchivedContacts(archiveData.contacts || []);
+      } catch (err) {
+        // Silently ignore - archives are optional
+        setArchivedContacts([]);
+      }
       
       setSelectedContactIds([]);
       toast.success(`${contactsToRestore.length} contact(s) restored successfully`);
