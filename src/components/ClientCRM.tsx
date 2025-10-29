@@ -86,6 +86,17 @@ export function ClientCRM() {
   const completedCount = contacts.filter(c => c.status === "completed").length;
   const inProgressCount = contacts.filter(c => c.status === "in-progress").length;
   
+  // Debug logging for statistics
+  useEffect(() => {
+    console.log('[CRM] Statistics update:', {
+      totalContacts: contacts.length,
+      pendingCount,
+      completedCount,
+      inProgressCount,
+      contactStatuses: contacts.map(c => c.status)
+    });
+  }, [contacts.length, pendingCount, completedCount, inProgressCount]);
+  
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
@@ -182,21 +193,26 @@ export function ClientCRM() {
           (a: any) => !a.called
         );
         
-        const userContacts = activeAssignments.map((assignment: any) => ({
-          id: assignment.id,
-          name: assignment.numberData?.name || assignment.numberData?.company || 'Unknown',
-          phone: assignment.numberData?.phoneNumber || assignment.numberData?.phone || '',
-          email: assignment.numberData?.email || '',
-          company: assignment.numberData?.company || '',
-          businessType: assignment.numberData?.customerType || assignment.numberData?.businessType,
-          status: 'pending',
-          assignedTo: assignment.agentId,
-          assignedAt: assignment.assignedAt,
-          assignmentId: assignment.id, // Keep track of assignment ID
-          ...assignment.numberData
-        }));
+        const userContacts = activeAssignments.map((assignment: any) => {
+          const contact = {
+            ...assignment.numberData,
+            id: assignment.id,
+            name: assignment.numberData?.name || assignment.numberData?.company || 'Unknown',
+            phone: assignment.numberData?.phoneNumber || assignment.numberData?.phone || '',
+            email: assignment.numberData?.email || '',
+            company: assignment.numberData?.company || '',
+            businessType: assignment.numberData?.customerType || assignment.numberData?.businessType,
+            assignedTo: assignment.agentId,
+            assignedAt: assignment.assignedAt,
+            assignmentId: assignment.id, // Keep track of assignment ID
+          };
+          // Always set status to 'pending' for newly loaded assignments (override any existing status from numberData)
+          contact.status = 'pending';
+          return contact;
+        });
         
         console.log(`[CRM] ✅ Loaded ${userContacts.length} assignments for ${currentUser.username}`);
+        console.log('[CRM] Contact statuses:', userContacts.map(c => ({ name: c.name, status: c.status })));
         setContacts(userContacts);
       } catch (error) {
         console.error('[CRM] Failed to load contacts:', error);

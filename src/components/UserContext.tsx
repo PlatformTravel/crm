@@ -80,6 +80,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [lastResetDate]);
 
   useEffect(() => {
+    // Ensure default admin user exists in localStorage (fallback when MongoDB is unavailable)
+    const usersData = localStorage.getItem('users');
+    if (!usersData) {
+      const defaultUsers = {
+        users: [
+          {
+            id: 'admin-fallback',
+            username: 'admin',
+            password: 'admin123',
+            name: 'Administrator',
+            email: 'admin@btmtravel.net',
+            role: 'admin',
+            permissions: [],
+            dailyTarget: 30,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      };
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
+      console.log('[USER CONTEXT] ✅ Created fallback admin user in localStorage');
+    }
+    
     // Check for saved session
     const savedUser = localStorage.getItem('btm_current_user');
     if (savedUser) {
@@ -162,9 +184,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     console.log('[LOGIN] Attempting login for username:', username);
     
     // FIRST: Try MongoDB backend (this is where users created via Admin panel are stored)
+    // Use a timeout to prevent hanging if MongoDB is unreachable
     try {
       console.log('[LOGIN] Checking MongoDB backend...');
-      const response = await backendService.login(username, password);
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('MongoDB connection timeout')), 5000)
+      );
+      
+      const loginPromise = backendService.login(username, password);
+      
+      const response = await Promise.race([loginPromise, timeoutPromise]) as any;
       
       if (response.success && response.user) {
         console.log('[LOGIN] ✅ MongoDB authentication successful:', response.user.username);
