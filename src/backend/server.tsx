@@ -9,13 +9,13 @@ const corsHeaders = {
 };
 
 // Server version and startup timestamp
-const SERVER_VERSION = '8.0.0-MANAGER-ENDPOINTS-ACTUALLY-ADDED';
+const SERVER_VERSION = '9.0.0-AGENT-MONITORING-FIXED';
 const SERVER_STARTED = new Date().toISOString();
 console.log('\n\n\n');
 console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
 console.log('🟢                                                         🟢');
 console.log('🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅          🟢');
-console.log('🟢  VERSION: 8.0.0 - MANAGER ENDPOINTS ADDED!             🟢');
+console.log('🟢  VERSION: 9.0.0 - AGENT MONITORING FIXED!              🟢');
 console.log('🟢                                                         🟢');
 console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
 console.log('');
@@ -644,7 +644,8 @@ Deno.serve(async (req) => {
       
       try {
         const usersCollection = await getCollection(Collections.USERS);
-        const progressCollection = await getCollection(Collections.DAILY_PROGRESS);
+        const clientsCollection = await getCollection(Collections.NUMBERS_DATABASE);
+        const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
         const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
         
         const agents = await usersCollection.find({ role: 'agent' }).toArray();
@@ -652,29 +653,56 @@ Deno.serve(async (req) => {
         const agentData = [];
         
         for (const agent of agents) {
-          const progress = await progressCollection.findOne({ agentId: agent.id }) || {
-            callsMade: 0,
-            successfulCalls: 0,
-            missedCalls: 0,
-            lastActivity: null
-          };
+          // Count CRM (clients) records assigned to this agent
+          const crmTotal = await clientsCollection.countDocuments({ assignedTo: agent.id });
           
-          const assignments = await assignmentsCollection.find({
+          // Count completed/called CRM records
+          // Check both the clients collection status and the assignments collection
+          const crmAssignments = await assignmentsCollection.find({ 
             agentId: agent.id,
-            status: 'assigned'
+            called: true 
           }).toArray();
+          const crmCompleted = crmAssignments.length;
+          const crmPending = crmTotal - crmCompleted;
+          
+          // Count Customer Service records assigned to this agent
+          const customerTotal = await customersCollection.countDocuments({ assignedTo: agent.id });
+          
+          // Count completed customer records (you can adjust the status check based on your needs)
+          const customerCompleted = await customersCollection.countDocuments({ 
+            assignedTo: agent.id,
+            status: 'completed'
+          });
+          const customerPending = customerTotal - customerCompleted;
+          
+          // Calculate overall stats
+          const overallTotal = crmTotal + customerTotal;
+          const overallCompleted = crmCompleted + customerCompleted;
+          const overallPending = crmPending + customerPending;
+          const completionPercentage = overallTotal > 0 
+            ? Math.round((overallCompleted / overallTotal) * 100)
+            : 0;
           
           agentData.push({
             id: agent.id,
             name: agent.name || agent.username,
             email: agent.email,
-            status: determineAgentStatus(progress.lastActivity),
-            callsMade: progress.callsMade || 0,
-            assigned: assignments.length,
-            successRate: progress.callsMade > 0 
-              ? Math.round(((progress.successfulCalls || 0) / progress.callsMade) * 100)
-              : 0,
-            lastActivity: progress.lastActivity || 'Never'
+            crm: {
+              total: crmTotal,
+              completed: crmCompleted,
+              pending: crmPending
+            },
+            customerService: {
+              total: customerTotal,
+              completed: customerCompleted,
+              pending: customerPending
+            },
+            overall: {
+              total: overallTotal,
+              completed: overallCompleted,
+              pending: overallPending,
+              completionPercentage
+            }
           });
         }
         
@@ -709,8 +737,8 @@ Deno.serve(async (req) => {
       
       try {
         const usersCollection = await getCollection(Collections.USERS);
-        const progressCollection = await getCollection(Collections.DAILY_PROGRESS);
-        const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
+        const clientsCollection = await getCollection(Collections.NUMBERS_DATABASE);
+        const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
         
         const agent = await usersCollection.findOne({ id: agentId });
         if (!agent) {
@@ -720,17 +748,11 @@ Deno.serve(async (req) => {
           );
         }
         
-        const progress = await progressCollection.findOne({ agentId }) || {
-          callsMade: 0,
-          successfulCalls: 0,
-          missedCalls: 0,
-          lastActivity: null
-        };
+        // Get all CRM records (clients) assigned to this agent
+        const crmRecords = await clientsCollection.find({ assignedTo: agentId }).toArray();
         
-        const assignments = await assignmentsCollection.find({
-          agentId,
-          status: 'assigned'
-        }).toArray();
+        // Get all Customer Service records assigned to this agent
+        const customerRecords = await customersCollection.find({ assignedTo: agentId }).toArray();
         
         return new Response(
           JSON.stringify({
@@ -739,28 +761,11 @@ Deno.serve(async (req) => {
               id: agent.id,
               name: agent.name || agent.username,
               email: agent.email,
-              role: agent.role,
-              status: determineAgentStatus(progress.lastActivity),
-              metrics: {
-                assigned: assignments.length,
-                callsMade: progress.callsMade || 0,
-                successfulCalls: progress.successfulCalls || 0,
-                missedCalls: progress.missedCalls || 0,
-                successRate: progress.callsMade > 0 
-                  ? Math.round(((progress.successfulCalls || 0) / progress.callsMade) * 100)
-                  : 0,
-                completionRate: assignments.length > 0
-                  ? Math.round(((progress.callsMade || 0) / assignments.length) * 100)
-                  : 0
-              },
-              lastActivity: progress.lastActivity || 'Never',
-              assignments: assignments.map(a => ({
-                id: a.id,
-                clientName: a.clientName,
-                phoneNumber: a.phoneNumber,
-                assignedAt: a.assignedAt,
-                called: a.called || false
-              }))
+              role: agent.role
+            },
+            data: {
+              crmRecords: convertMongoDocs(crmRecords),
+              customerRecords: convertMongoDocs(customerRecords)
             }
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

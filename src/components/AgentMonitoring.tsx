@@ -133,7 +133,7 @@ export function AgentMonitoring() {
     // Performance filter
     if (performanceFilter !== 'all') {
       filtered = filtered.filter(agent => {
-        const percentage = agent.overall.completionPercentage;
+        const percentage = agent.overall?.completionPercentage || 0;
         switch (performanceFilter) {
           case 'excellent':
             return percentage >= 80;
@@ -152,7 +152,7 @@ export function AgentMonitoring() {
     // Activity filter
     if (activityFilter !== 'all') {
       filtered = filtered.filter(agent => {
-        const hasActivity = agent.overall.total > 0;
+        const hasActivity = (agent.overall?.total || 0) > 0;
         switch (activityFilter) {
           case 'active':
             return hasActivity;
@@ -170,17 +170,17 @@ export function AgentMonitoring() {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'completion-high':
-          return b.overall.completionPercentage - a.overall.completionPercentage;
+          return (b.overall?.completionPercentage || 0) - (a.overall?.completionPercentage || 0);
         case 'completion-low':
-          return a.overall.completionPercentage - b.overall.completionPercentage;
+          return (a.overall?.completionPercentage || 0) - (b.overall?.completionPercentage || 0);
         case 'total-high':
-          return b.overall.total - a.overall.total;
+          return (b.overall?.total || 0) - (a.overall?.total || 0);
         case 'total-low':
-          return a.overall.total - b.overall.total;
+          return (a.overall?.total || 0) - (b.overall?.total || 0);
         case 'completed-high':
-          return b.overall.completed - a.overall.completed;
+          return (b.overall?.completed || 0) - (a.overall?.completed || 0);
         case 'completed-low':
-          return a.overall.completed - b.overall.completed;
+          return (a.overall?.completed || 0) - (b.overall?.completed || 0);
         default:
           return 0;
       }
@@ -265,7 +265,7 @@ export function AgentMonitoring() {
                   <span className="text-sm text-purple-700">Assignments</span>
                 </div>
                 <div className="text-2xl text-purple-900 mb-1">
-                  {agents.reduce((sum, agent) => sum + agent.overall.total, 0)}
+                  {agents.reduce((sum, agent) => sum + (agent.overall?.total || 0), 0)}
                 </div>
                 <p className="text-xs text-purple-600/70">
                   All agents combined
@@ -287,11 +287,11 @@ export function AgentMonitoring() {
                   <span className="text-sm text-green-700">Completed</span>
                 </div>
                 <div className="text-2xl text-green-900 mb-1">
-                  {agents.reduce((sum, agent) => sum + agent.overall.completed, 0)}
+                  {agents.reduce((sum, agent) => sum + (agent.overall?.completed || 0), 0)}
                 </div>
                 <p className="text-xs text-green-600/70">
-                  {agents.length > 0 && agents.reduce((sum, agent) => sum + agent.overall.total, 0) > 0
-                    ? Math.round((agents.reduce((sum, agent) => sum + agent.overall.completed, 0) / agents.reduce((sum, agent) => sum + agent.overall.total, 0)) * 100) 
+                  {agents.length > 0 && agents.reduce((sum, agent) => sum + (agent.overall?.total || 0), 0) > 0
+                    ? Math.round((agents.reduce((sum, agent) => sum + (agent.overall?.completed || 0), 0) / agents.reduce((sum, agent) => sum + (agent.overall?.total || 0), 0)) * 100) 
                     : 0}% completion
                 </p>
               </div>
@@ -312,7 +312,7 @@ export function AgentMonitoring() {
                 </div>
                 <div className="text-2xl text-orange-900 mb-1">
                   {agents.length > 0 
-                    ? Math.round(agents.reduce((sum, agent) => sum + agent.overall.completionPercentage, 0) / agents.length)
+                    ? Math.round(agents.reduce((sum, agent) => sum + (agent.overall?.completionPercentage || 0), 0) / agents.length)
                     : 0}%
                 </div>
                 <p className="text-xs text-orange-600/70">
@@ -479,7 +479,7 @@ export function AgentMonitoring() {
           ) : (
             <div className="space-y-4">
               {filteredAndSortedAgents.map((agent, index) => {
-                const status = getStatusBadge(agent.overall.completionPercentage);
+                const status = getStatusBadge(agent.overall?.completionPercentage || 0);
                 const StatusIcon = status.icon;
                 return (
                   <div
@@ -525,12 +525,12 @@ export function AgentMonitoring() {
                               <TrendingUp className="h-4 w-4 text-purple-600" />
                               Overall Progress
                             </span>
-                            <span className="text-purple-700">{agent.overall.completionPercentage}%</span>
+                            <span className="text-purple-700">{agent.overall?.completionPercentage || 0}%</span>
                           </div>
                           <div className="relative h-3 bg-purple-100 rounded-full overflow-hidden">
                             <div 
                               className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-500 rounded-full transition-all duration-1000 shadow-lg"
-                              style={{ width: `${agent.overall.completionPercentage}%` }}
+                              style={{ width: `${agent.overall?.completionPercentage || 0}%` }}
                             >
                               <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
                             </div>
@@ -548,15 +548,15 @@ export function AgentMonitoring() {
                             <div className="space-y-1 text-sm">
                               <div className="flex justify-between items-center">
                                 <span className="text-blue-600/70">Total:</span>
-                                <span className="text-blue-900 px-2 py-0.5 rounded-md bg-blue-100/50">{agent.crm.total}</span>
+                                <span className="text-blue-900 px-2 py-0.5 rounded-md bg-blue-100/50">{agent.crm?.total || 0}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-blue-600/70">Completed:</span>
-                                <span className="text-green-700 px-2 py-0.5 rounded-md bg-green-100/50">{agent.crm.completed}</span>
+                                <span className="text-green-700 px-2 py-0.5 rounded-md bg-green-100/50">{agent.crm?.completed || 0}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-blue-600/70">Pending:</span>
-                                <span className="text-orange-700 px-2 py-0.5 rounded-md bg-orange-100/50">{agent.crm.pending}</span>
+                                <span className="text-orange-700 px-2 py-0.5 rounded-md bg-orange-100/50">{agent.crm?.pending || 0}</span>
                               </div>
                             </div>
                           </div>
@@ -570,15 +570,15 @@ export function AgentMonitoring() {
                             <div className="space-y-1 text-sm">
                               <div className="flex justify-between items-center">
                                 <span className="text-purple-600/70">Total:</span>
-                                <span className="text-purple-900 px-2 py-0.5 rounded-md bg-purple-100/50">{agent.customerService.total}</span>
+                                <span className="text-purple-900 px-2 py-0.5 rounded-md bg-purple-100/50">{agent.customerService?.total || 0}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-purple-600/70">Completed:</span>
-                                <span className="text-green-700 px-2 py-0.5 rounded-md bg-green-100/50">{agent.customerService.completed}</span>
+                                <span className="text-green-700 px-2 py-0.5 rounded-md bg-green-100/50">{agent.customerService?.completed || 0}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-purple-600/70">Pending:</span>
-                                <span className="text-orange-700 px-2 py-0.5 rounded-md bg-orange-100/50">{agent.customerService.pending}</span>
+                                <span className="text-orange-700 px-2 py-0.5 rounded-md bg-orange-100/50">{agent.customerService?.pending || 0}</span>
                               </div>
                             </div>
                           </div>
@@ -606,6 +606,9 @@ export function AgentMonitoring() {
                 <p className="text-sm text-muted-foreground mt-1">View exactly what this agent sees</p>
               </div>
             </DialogTitle>
+            <DialogDescription>
+              View all CRM clients and customer service records assigned to this agent
+            </DialogDescription>
           </DialogHeader>
 
           {selectedAgent && (
@@ -616,20 +619,20 @@ export function AgentMonitoring() {
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white transition-all duration-300"
                 >
                   <Phone className="h-4 w-4 mr-2" />
-                  Client CRM ({selectedAgent.data.crmRecords.length})
+                  Client CRM ({selectedAgent.data?.crmRecords?.length || 0})
                 </TabsTrigger>
                 <TabsTrigger 
                   value="customer"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white transition-all duration-300"
                 >
                   <Users className="h-4 w-4 mr-2" />
-                  Customer Service ({selectedAgent.data.customerRecords.length})
+                  Customer Service ({selectedAgent.data?.customerRecords?.length || 0})
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="crm" className="space-y-4">
                 <ScrollArea className="h-[500px] w-full rounded-xl border border-purple-100/50 bg-white/60 backdrop-blur-sm p-4">
-                  {selectedAgent.data.crmRecords.length === 0 ? (
+                  {(selectedAgent.data?.crmRecords?.length || 0) === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 mb-4">
                         <Clock className="h-8 w-8 text-blue-500" />
@@ -648,7 +651,7 @@ export function AgentMonitoring() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedAgent.data.crmRecords.map((record, index) => (
+                        {(selectedAgent.data?.crmRecords || []).map((record, index) => (
                           <TableRow key={record.id || index} className="hover:bg-blue-50/50 transition-colors duration-200">
                             <TableCell>{record.name || 'N/A'}</TableCell>
                             <TableCell>{record.email || 'N/A'}</TableCell>
@@ -681,7 +684,7 @@ export function AgentMonitoring() {
 
               <TabsContent value="customer" className="space-y-4">
                 <ScrollArea className="h-[500px] w-full rounded-xl border border-purple-100/50 bg-white/60 backdrop-blur-sm p-4">
-                  {selectedAgent.data.customerRecords.length === 0 ? (
+                  {(selectedAgent.data?.customerRecords?.length || 0) === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 mb-4">
                         <Clock className="h-8 w-8 text-purple-500" />
@@ -701,7 +704,7 @@ export function AgentMonitoring() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedAgent.data.customerRecords.map((record, index) => (
+                        {(selectedAgent.data?.customerRecords || []).map((record, index) => (
                           <TableRow key={record.id || index} className="hover:bg-purple-50/50 transition-colors duration-200">
                             <TableCell>{record.name || 'N/A'}</TableCell>
                             <TableCell>{record.email || 'N/A'}</TableCell>

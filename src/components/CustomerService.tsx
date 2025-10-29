@@ -72,7 +72,7 @@ const ensureUniqueIds = (customerList: Customer[]): Customer[] => {
 };
 
 export function CustomerService() {
-  const { isManager, isAdmin, currentUser } = useUser();
+  const { isManager, isAdmin, currentUser, incrementCallCount } = useUser();
   const { makeCall, config } = useThreeCX();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [archivedCustomers, setArchivedCustomers] = useState<Customer[]>([]);
@@ -426,6 +426,17 @@ export function CustomerService() {
     setEmailTemplate("custom");
     setIsEmailSectionOpen(false);
     setIsDialogOpen(true);
+  };
+
+  const handleMakeCall = (phoneNumber: string, contactName?: string) => {
+    // Make the call via 3CX
+    makeCall(phoneNumber, contactName);
+    
+    // Increment daily call count
+    incrementCallCount();
+    
+    // Show success message
+    toast.success(`Call initiated to ${contactName || phoneNumber}`);
   };
 
   const handleSendResponse = () => {
@@ -2182,7 +2193,7 @@ export function CustomerService() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => makeCall(customer.phone, customer.name)}
+                                  onClick={() => handleMakeCall(customer.phone, customer.name)}
                                   className="ml-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg h-7 px-2.5 rounded-lg"
                                 >
                                   <PhoneCall className="w-3.5 h-3.5" />

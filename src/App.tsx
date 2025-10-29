@@ -4,12 +4,10 @@ import { ClientCRM } from "./components/ClientCRM";
 import { PromoSales } from "./components/PromoSales";
 import { CustomerService } from "./components/CustomerService";
 import { AdminSettings } from "./components/AdminSettings";
-import { AgentPortal } from "./components/AgentPortal";
 import { ManagerPortal } from "./components/ManagerPortal";
-import { ManagerPortalModern } from "./components/ManagerPortalModern";
 import { Help } from "./components/Help";
 import { Toaster } from "./components/ui/sonner";
-import { Phone, Tag, HeadphonesIcon, Sparkles, Settings, LogOut, User, BookOpen, Target } from "lucide-react";
+import { Phone, Tag, HeadphonesIcon, Settings, LogOut, User, BookOpen } from "lucide-react";
 import { BTMTravelLogo } from "./components/BTMTravelLogo";
 import { UserProvider, useUser } from "./components/UserContext";
 import { ThreeCXProvider, useThreeCX } from "./components/ThreeCXContext";
@@ -25,8 +23,6 @@ function AppContent() {
   const { config } = useThreeCX();
   const [showHelp, setShowHelp] = useState(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
-  const [agentView, setAgentView] = useState<'portal' | 'classic'>('portal');
-  const [managerView, setManagerView] = useState<'portal' | 'classic'>('portal');
 
   const isManager = currentUser?.role === 'manager';
 
@@ -263,19 +259,9 @@ function AppContent() {
                       BTMTravel CRM
                     </h1>
                     <p className="text-white/90 flex items-center gap-2 text-sm sm:text-lg" style={{ fontWeight: '500' }}>
-                      {managerView === 'portal' ? (
-                        <>
-                          <Target className="w-4 h-4 sm:w-5 sm:h-5" />
-                          <span className="hidden sm:inline">Manager Portal - Advanced Analytics</span>
-                          <span className="sm:hidden">Manager Portal</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                          <span className="hidden sm:inline">Manager Portal - Classic View</span>
-                          <span className="sm:hidden">Classic View</span>
-                        </>
-                      )}
+                      <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">Manager Portal - Team Management</span>
+                      <span className="sm:hidden">Manager Portal</span>
                     </p>
                   </div>
                 </div>
@@ -316,32 +302,8 @@ function AppContent() {
                 </div>
               </div>
 
-              {/* Bottom Row - View Toggle and Help Button */}
-              <div className="flex justify-between items-center">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setManagerView('portal')}
-                    variant="outline"
-                    size="sm"
-                    className={`bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:text-white text-sm ${
-                      managerView === 'portal' ? 'bg-white/20 border-white/40' : ''
-                    }`}
-                  >
-                    <Target className="w-4 h-4 mr-2" />
-                    <span>Manager Portal</span>
-                  </Button>
-                  <Button
-                    onClick={() => setManagerView('classic')}
-                    variant="outline"
-                    size="sm"
-                    className={`bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:text-white text-sm ${
-                      managerView === 'classic' ? 'bg-white/20 border-white/40' : ''
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    <span>Classic View</span>
-                  </Button>
-                </div>
+              {/* Bottom Row - Help Button */}
+              <div className="flex justify-end items-center">
                 <Button
                   onClick={() => setShowHelp(true)}
                   variant="outline"
@@ -357,14 +319,8 @@ function AppContent() {
         </div>
 
         <div className="container mx-auto px-3 sm:px-6 py-6 sm:py-10">
-          {/* Manager View Toggle */}
-          {managerView === 'portal' ? (
-            /* Modern Manager Portal - Glassmorphism & Analytics */
-            <ManagerPortalModern />
-          ) : (
-            /* Classic Manager View - Traditional Tables */
-            <ManagerPortal />
-          )}
+          {/* Manager Portal - Team Management */}
+          <ManagerPortal />
         </div>
 
         <ActiveCallPanel />
@@ -418,19 +374,9 @@ function AppContent() {
                     BTMTravel CRM
                   </h1>
                   <p className="text-white/90 flex items-center gap-2 text-sm sm:text-lg" style={{ fontWeight: '500' }}>
-                    {agentView === 'portal' ? (
-                      <>
-                        <Target className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline">Agent Portal - Daily Call List</span>
-                        <span className="sm:hidden">Agent Portal</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline">Client Management & Sales Operations</span>
-                        <span className="sm:hidden">CRM Platform</span>
-                      </>
-                    )}
+                    <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline">Client Management & Sales Operations</span>
+                    <span className="sm:hidden">CRM Platform</span>
                   </p>
                 </div>
               </div>
@@ -474,32 +420,8 @@ function AppContent() {
               </div>
             </div>
 
-            {/* Bottom Row - View Toggle and Help Button */}
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setAgentView('portal')}
-                  variant="outline"
-                  size="sm"
-                  className={`bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:text-white text-sm ${
-                    agentView === 'portal' ? 'bg-white/20 border-white/40' : ''
-                  }`}
-                >
-                  <Target className="w-4 h-4 mr-2" />
-                  <span>Agent Portal</span>
-                </Button>
-                <Button
-                  onClick={() => setAgentView('classic')}
-                  variant="outline"
-                  size="sm"
-                  className={`bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:text-white text-sm ${
-                    agentView === 'classic' ? 'bg-white/20 border-white/40' : ''
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  <span>Classic View</span>
-                </Button>
-              </div>
+            {/* Bottom Row - Help Button */}
+            <div className="flex justify-end items-center">
               <Button
                 onClick={() => setShowHelp(true)}
                 variant="outline"
@@ -515,13 +437,8 @@ function AppContent() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-6 py-6 sm:py-10">
-        {/* Agent View Toggle */}
-        {agentView === 'portal' ? (
-          /* Agent Portal - Streamlined Call List Interface */
-          <AgentPortal />
-        ) : (
-          /* Classic View - Original Tabs Interface */
-          <Tabs defaultValue="client" className="space-y-6 sm:space-y-8">
+        {/* Agent Classic View - Original Tabs Interface */}
+        <Tabs defaultValue="client" className="space-y-6 sm:space-y-8">
             <TabsList className="grid w-full grid-cols-3 sm:w-[600px] h-12 sm:h-14 p-1 sm:p-1.5 bg-white border-2 border-gray-200 shadow-xl rounded-lg sm:rounded-xl">
               <TabsTrigger 
                 value="client" 
@@ -573,7 +490,6 @@ function AppContent() {
               <CustomerService />
             </TabsContent>
           </Tabs>
-        )}
       </div>
 
       <ActiveCallPanel />
