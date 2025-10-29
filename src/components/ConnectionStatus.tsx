@@ -8,9 +8,9 @@ import { backendService } from '../utils/backendService';
 import { BACKEND_URL } from '../utils/config';
 
 export function ConnectionStatus() {
-  const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected' | 'initializing'>('checking');
   const [backendInfo, setBackendInfo] = useState<any>(null);
-  const [mongoStatus, setMongoStatus] = useState<'unknown' | 'connected' | 'failed'>('unknown');
+  const [mongoStatus, setMongoStatus] = useState<'unknown' | 'connected' | 'initializing' | 'failed'>('unknown');
   const [lastCheck, setLastCheck] = useState<Date>(new Date());
   const [isChecking, setIsChecking] = useState(false);
 
@@ -25,6 +25,14 @@ export function ConnectionStatus() {
         setStatus('connected');
         setBackendInfo(response);
         setMongoStatus('connected');
+      } else if (response.status === 'initializing') {
+        setStatus('initializing');
+        setBackendInfo(response);
+        setMongoStatus('initializing');
+      } else if (response.status === 'degraded') {
+        setStatus('initializing');
+        setBackendInfo(response);
+        setMongoStatus(response.mongodb === 'initializing' ? 'initializing' : 'failed');
       } else {
         setStatus('disconnected');
         setMongoStatus('failed');
@@ -53,6 +61,7 @@ export function ConnectionStatus() {
     switch (status) {
       case 'connected': return 'bg-green-500';
       case 'disconnected': return 'bg-red-500';
+      case 'initializing': return 'bg-blue-500';
       case 'checking': return 'bg-yellow-500';
       default: return 'bg-gray-500';
     }
@@ -62,6 +71,7 @@ export function ConnectionStatus() {
     switch (status) {
       case 'connected': return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'disconnected': return <XCircle className="w-5 h-5 text-red-500" />;
+      case 'initializing': return <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />;
       case 'checking': return <AlertCircle className="w-5 h-5 text-yellow-500 animate-pulse" />;
       default: return <AlertCircle className="w-5 h-5 text-gray-500" />;
     }
@@ -76,8 +86,12 @@ export function ConnectionStatus() {
             <CardTitle className="text-lg">Backend Connection</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${getStatusColor()} animate-pulse`} />
-            <Badge variant={status === 'connected' ? 'default' : 'destructive'}>
+            <div className={`w-3 h-3 rounded-full ${getStatusColor()} ${status === 'initializing' ? 'animate-pulse' : ''}`} />
+            <Badge variant={
+              status === 'connected' ? 'default' : 
+              status === 'initializing' ? 'secondary' : 
+              'destructive'
+            } className={status === 'initializing' ? 'bg-blue-500 text-white' : ''}>
               {status.toUpperCase()}
             </Badge>
           </div>
@@ -121,6 +135,16 @@ export function ConnectionStatus() {
                   <div className="w-2 h-2 bg-green-500 rounded-full" />
                   <span className="text-sm">Connected</span>
                 </>
+              ) : mongoStatus === 'initializing' ? (
+                <>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="text-sm">Initializing...</span>
+                </>
+              ) : mongoStatus === 'failed' ? (
+                <>
+                  <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="text-sm">Failed</span>
+                </>
               ) : (
                 <>
                   <div className="w-2 h-2 bg-gray-400 rounded-full" />
@@ -133,7 +157,11 @@ export function ConnectionStatus() {
 
         {/* Backend Info */}
         {backendInfo && (
-          <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className={`p-3 rounded-lg border ${
+            status === 'connected' ? 'bg-green-50 border-green-200' :
+            status === 'initializing' ? 'bg-blue-50 border-blue-200' :
+            'bg-gray-50 border-gray-200'
+          }`}>
             <div className="space-y-1">
               <div className="text-sm">
                 <span className="text-gray-600">Version:</span>{' '}
@@ -149,6 +177,19 @@ export function ConnectionStatus() {
               </div>
             </div>
           </div>
+        )}
+        
+        {/* Initializing State */}
+        {status === 'initializing' && (
+          <Alert className="border-blue-300 bg-blue-50">
+            <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <p className="text-blue-800"><strong>Database is warming up...</strong></p>
+                <p className="text-sm text-blue-700">MongoDB is initializing. This usually takes 10-30 seconds. The system will be ready shortly.</p>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Error State */}
@@ -212,12 +253,18 @@ export function ConnectionStatus() {
 
 // Mini version for header/navbar
 export function ConnectionIndicator() {
-  const [status, setStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [status, setStatus] = useState<'connected' | 'disconnected' | 'checking' | 'initializing'>('checking');
 
   const checkConnection = async () => {
     try {
       const response = await backendService.health();
-      setStatus(response.status === 'ok' ? 'connected' : 'disconnected');
+      if (response.status === 'ok') {
+        setStatus('connected');
+      } else if (response.status === 'initializing' || response.status === 'degraded') {
+        setStatus('initializing');
+      } else {
+        setStatus('disconnected');
+      }
     } catch (error) {
       setStatus('disconnected');
     }
@@ -233,6 +280,7 @@ export function ConnectionIndicator() {
     switch (status) {
       case 'connected': return <Wifi className="w-4 h-4 text-green-500" />;
       case 'disconnected': return <WifiOff className="w-4 h-4 text-red-500" />;
+      case 'initializing': return <Database className="w-4 h-4 text-blue-500 animate-pulse" />;
       case 'checking': return <RefreshCw className="w-4 h-4 text-yellow-500 animate-spin" />;
     }
   };
@@ -241,6 +289,7 @@ export function ConnectionIndicator() {
     switch (status) {
       case 'connected': return 'Backend connected';
       case 'disconnected': return 'Backend offline - Check if server is running';
+      case 'initializing': return 'Database initializing - Please wait...';
       case 'checking': return 'Checking connection...';
     }
   };
@@ -249,7 +298,10 @@ export function ConnectionIndicator() {
     <div className="flex items-center gap-2" title={getTooltip()}>
       {getIcon()}
       <span className="text-sm">
-        {status === 'connected' ? 'Online' : status === 'disconnected' ? 'Offline' : 'Checking...'}
+        {status === 'connected' ? 'Online' : 
+         status === 'initializing' ? 'Initializing...' :
+         status === 'disconnected' ? 'Offline' : 
+         'Checking...'}
       </span>
     </div>
   );

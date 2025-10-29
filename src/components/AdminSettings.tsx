@@ -141,6 +141,14 @@ export function AdminSettings() {
         console.log('[ADMIN] ✅ Loaded users from backend:', validUsers.length, 'users');
       }
     } catch (error: any) {
+      // Suppress database initialization errors (503)
+      const { isDatabaseInitializing } = await import('../utils/backendService');
+      if (isDatabaseInitializing(error)) {
+        // Database is still initializing, silently skip
+        setUsers([]);
+        return;
+      }
+      
       console.error('[ADMIN] Error loading settings:', error);
       toast.error('Failed to load admin settings. Please check backend connection.');
       setUsers([]);
@@ -778,6 +786,14 @@ export function AdminSettings() {
       setPromotions(data.promotions || []);
       console.log('[ADMIN] Loaded promotions:', data.promotions?.length || 0);
     } catch (error: any) {
+      // Suppress database initialization errors (503)
+      const { isDatabaseInitializing } = await import('../utils/backendService');
+      if (isDatabaseInitializing(error)) {
+        // Database is still initializing, silently skip
+        setPromotions([]);
+        return;
+      }
+      
       console.error('[ADMIN] Failed to fetch promotions:', error);
       // Set empty array on error
       setPromotions([]);

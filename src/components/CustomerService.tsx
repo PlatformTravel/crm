@@ -185,7 +185,14 @@ export function CustomerService() {
           
           setLatestPromotions(activePromos);
         }
-      } catch (error) {
+      } catch (error: any) {
+        // Suppress database initialization errors (503)
+        const { isDatabaseInitializing } = await import('../utils/backendService');
+        if (isDatabaseInitializing(error)) {
+          // Database is still initializing, silently skip
+          return;
+        }
+        
         // Silently fail if server is offline
         if (!(error instanceof TypeError && error.message.includes('fetch'))) {
           console.error('[CUSTOMER SERVICE] Failed to fetch promotions:', error);

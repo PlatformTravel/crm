@@ -1,17 +1,31 @@
 // Backend Service - Pure MongoDB Backend (No Supabase!)
 import { BACKEND_URL } from './config';
 
-// Generic fetch wrapper for backend calls with timeout
-async function backendFetch(endpoint: string, options: RequestInit = {}, customTimeout?: number): Promise<any> {
+// Helper function to check if error is a database initialization error (503)
+export function isDatabaseInitializing(error: any): boolean {
+  if (!error || !error.message) return false;
+  
+  const message = error.message.toString();
+  return (
+    message.includes('503') && 
+    (message.includes('Database connection not ready') || 
+     message.includes('not_initialized') ||
+     message.includes('MongoDB not connected') ||
+     message.includes('Database connection failed'))
+  );
+}
+
+// Generic fetch wrapper for backend calls with timeout and automatic retry for DB initialization
+async function backendFetch(endpoint: string, options: RequestInit = {}, customTimeout?: number, retryCount = 0): Promise<any> {
   const url = `${BACKEND_URL}${endpoint}`;
   
   // Silently make requests (no console logs unless error)
   
   // Create an AbortController for timeout
-  // Use longer timeout for health checks (30s) to allow MongoDB to connect
-  // Regular requests use 15s timeout
+  // Use longer timeout for health checks (60s) to allow MongoDB to connect
+  // Regular requests use 30s timeout (increased from 15s)
   const isHealthCheck = endpoint.includes('/health') || endpoint.includes('/test');
-  const timeout = customTimeout || (isHealthCheck ? 30000 : 15000);
+  const timeout = customTimeout || (isHealthCheck ? 60000 : 30000);
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -30,6 +44,18 @@ async function backendFetch(endpoint: string, options: RequestInit = {}, customT
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // Check if it's a database initialization error (503)
+      if (response.status === 503 && errorText.includes('not_initialized') || errorText.includes('Database not ready')) {
+        // Auto-retry up to 3 times with exponential backoff
+        if (retryCount < 3) {
+          const delay = Math.min(2000 * Math.pow(2, retryCount), 8000); // 2s, 4s, 8s
+          console.log(`[Backend] Database initializing, retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return backendFetch(endpoint, options, customTimeout, retryCount + 1);
+        }
+      }
+      
       // Silently handle all HTTP errors
       throw new Error(`Server responded with ${response.status}: ${errorText}`);
     }
@@ -341,11 +367,22 @@ export const backendService = {
     });
   },
 
-  async restoreFromArchive(archiveId: string, entityType: string) {
+  async restoreFromArchive(recordId: string, recordType: string) {
     return backendFetch('/archive/restore', {
       method: 'POST',
-      body: JSON.stringify({ archiveId, entityType }),
+      body: JSON.stringify({ recordId, recordType }),
     });
+  },
+
+  async deleteFromArchive(recordId: string) {
+    return backendFetch('/archive/delete', {
+      method: 'POST',
+      body: JSON.stringify({ recordId }),
+    });
+  },
+
+  async getAllArchived() {
+    return backendFetch('/archive');
   },
 
   // Archive - Type-specific helpers

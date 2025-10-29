@@ -80,6 +80,12 @@ export function ClientCRM() {
   
   // Dynamic daily target based on assigned contacts from database
   const dailyTarget = contacts.length;
+  
+  // Calculate statistics from contacts
+  const pendingCount = contacts.filter(c => c.status === "pending" || !c.status).length;
+  const completedCount = contacts.filter(c => c.status === "completed").length;
+  const inProgressCount = contacts.filter(c => c.status === "in-progress").length;
+  
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
@@ -388,8 +394,12 @@ export function ClientCRM() {
         callTime: new Date().toISOString(),
       });
       
-      // Remove from local contacts list (assignment is now complete)
-      const updatedContacts = contacts.filter(c => c.id !== selectedContact.id);
+      // Update contact status to completed (keep in list to show statistics)
+      const updatedContacts = contacts.map(c =>
+        c.id === selectedContact.id 
+          ? { ...c, status: "completed" as const, lastContact: new Date().toISOString(), notes: currentNotes }
+          : c
+      );
       setContacts(updatedContacts);
       
       // Increment daily call count
@@ -1375,8 +1385,6 @@ export function ClientCRM() {
   };
 
   const displayContacts = showArchived ? archivedContacts : contacts;
-  const pendingCount = contacts.filter(c => c.status === "pending").length;
-  const completedCount = contacts.filter(c => c.status === "completed").length;
 
   // Pagination calculations
   const totalPages = Math.ceil(displayContacts.length / contactsPerPage);

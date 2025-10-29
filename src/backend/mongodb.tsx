@@ -21,15 +21,15 @@ export async function getMongoDb(): Promise<Db> {
   }
 
   // Hardcoded MongoDB connection string with optimized timeouts
-  const MONGODB_URI = 'mongodb+srv://crm_db_user:y7eShqCFNoyfSLPb@cluster0.vlklc6c.mongodb.net/btm_travel_crm?retryWrites=true&w=majority&connectTimeoutMS=20000&serverSelectionTimeoutMS=20000';
+  const MONGODB_URI = 'mongodb+srv://crm_db_user:y7eShqCFNoyfSLPb@cluster0.vlklc6c.mongodb.net/btm_travel_crm?retryWrites=true&w=majority&connectTimeoutMS=45000&serverSelectionTimeoutMS=45000';
 
   console.log(`[MongoDB] Connecting to database (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})...`);
 
   try {
     const client = new MongoClient(MONGODB_URI, {
-      serverSelectionTimeoutMS: 20000, // 20 seconds
-      connectTimeoutMS: 20000,
-      socketTimeoutMS: 20000,
+      serverSelectionTimeoutMS: 45000, // 45 seconds - increased for more reliable connection
+      connectTimeoutMS: 45000,
+      socketTimeoutMS: 45000,
       maxPoolSize: 10,
       minPoolSize: 1, // Reduced from 2 to speed up initial connection
       retryWrites: true,

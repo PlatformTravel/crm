@@ -9,13 +9,13 @@ const corsHeaders = {
 };
 
 // Server version and startup timestamp
-const SERVER_VERSION = '9.0.0-AGENT-MONITORING-FIXED';
+const SERVER_VERSION = '9.1.0-MONGODB-AUTO-INIT';
 const SERVER_STARTED = new Date().toISOString();
 console.log('\n\n\n');
 console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
 console.log('🟢                                                         🟢');
 console.log('🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅          🟢');
-console.log('🟢  VERSION: 9.0.0 - AGENT MONITORING FIXED!              🟢');
+console.log('🟢  VERSION: 9.1.0 - MONGODB AUTO-INIT!                   🟢');
 console.log('🟢                                                         🟢');
 console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
 console.log('');
@@ -58,15 +58,54 @@ function determineAgentStatus(lastActivityTime?: string): 'active' | 'idle' | 'o
 // Track MongoDB initialization status
 let mongoInitialized = false;
 let mongoInitializing = false;
+let mongoInitPromise: Promise<void> | null = null;
 
-// Helper function to check if MongoDB is ready
-function checkMongoReady(): Response | null {
+// Helper function to ensure MongoDB is initialized
+async function ensureMongoInitialized(): Promise<void> {
+  if (mongoInitialized) {
+    return;
+  }
+  
+  if (mongoInitPromise) {
+    // Wait for existing initialization to complete
+    await mongoInitPromise;
+    return;
+  }
+  
+  // Start new initialization
+  mongoInitPromise = (async () => {
+    try {
+      mongoInitializing = true;
+      console.log('[MongoDB] Initializing database...');
+      await initializeDatabase();
+      mongoInitialized = true;
+      mongoInitializing = false;
+      console.log('[MongoDB] ✅ Connected and ready!');
+    } catch (error) {
+      mongoInitializing = false;
+      mongoInitialized = false;
+      console.error('[MongoDB] ❌ Initialization failed:', error);
+      throw error;
+    }
+  })();
+  
+  await mongoInitPromise;
+}
+
+// Helper function to check if MongoDB is ready (with auto-init)
+async function checkMongoReady(): Promise<Response | null> {
+  if (mongoInitialized) {
+    return null; // MongoDB is ready
+  }
+  
+  // If currently initializing, return a friendly message
   if (mongoInitializing) {
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Database is initializing, please wait a moment and try again',
-        status: 'initializing'
+        error: 'Database connection not ready yet. Please refresh the page in a moment.',
+        status: 'not_initialized',
+        message: 'MongoDB is currently initializing. This typically takes 10-30 seconds.'
       }),
       { 
         status: 503,
@@ -75,12 +114,18 @@ function checkMongoReady(): Response | null {
     );
   }
   
-  if (!mongoInitialized) {
+  try {
+    // Try to initialize if not already doing so
+    await ensureMongoInitialized();
+    return null; // MongoDB is now ready
+  } catch (error) {
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Database connection not ready yet. Please refresh the page in a moment.',
-        status: 'not_initialized'
+        error: 'Database not ready',
+        status: 'error',
+        details: error.message,
+        message: 'Failed to connect to MongoDB. Please check your internet connection and try again.'
       }),
       { 
         status: 503,
@@ -88,22 +133,15 @@ function checkMongoReady(): Response | null {
       }
     );
   }
-  
-  return null; // MongoDB is ready
 }
 
 // Initialize MongoDB in the background (non-blocking)
 console.log('🔧 Starting MongoDB initialization in background...');
 (async () => {
   try {
-    mongoInitializing = true;
-    await initializeDatabase();
-    mongoInitialized = true;
-    mongoInitializing = false;
-    console.log('✅ MongoDB connection pool ready!');
+    await ensureMongoInitialized();
   } catch (error) {
-    mongoInitializing = false;
-    console.error('⚠️ MongoDB initialization failed:', error);
+    console.error('⚠️ Initial MongoDB connection failed:', error);
     console.log('⏳ Will retry on first request...');
   }
 })();
@@ -558,11 +596,9 @@ Deno.serve(async (req) => {
     if (path === '/team-performance' && req.method === 'GET') {
       console.log('[MANAGER] Team performance requested');
       
-      if (!mongoInitialized) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Database not ready' }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
       }
       
       try {
@@ -631,108 +667,16 @@ Deno.serve(async (req) => {
       }
     }
     
-    // GET /agent-monitoring/overview - Get agent monitoring overview
-    if (path === '/agent-monitoring/overview' && req.method === 'GET') {
-      console.log('[MANAGER] Agent monitoring overview requested');
-      
-      if (!mongoInitialized) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Database not ready' }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      try {
-        const usersCollection = await getCollection(Collections.USERS);
-        const clientsCollection = await getCollection(Collections.NUMBERS_DATABASE);
-        const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
-        const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
-        
-        const agents = await usersCollection.find({ role: 'agent' }).toArray();
-        
-        const agentData = [];
-        
-        for (const agent of agents) {
-          // Count CRM (clients) records assigned to this agent
-          const crmTotal = await clientsCollection.countDocuments({ assignedTo: agent.id });
-          
-          // Count completed/called CRM records
-          // Check both the clients collection status and the assignments collection
-          const crmAssignments = await assignmentsCollection.find({ 
-            agentId: agent.id,
-            called: true 
-          }).toArray();
-          const crmCompleted = crmAssignments.length;
-          const crmPending = crmTotal - crmCompleted;
-          
-          // Count Customer Service records assigned to this agent
-          const customerTotal = await customersCollection.countDocuments({ assignedTo: agent.id });
-          
-          // Count completed customer records (you can adjust the status check based on your needs)
-          const customerCompleted = await customersCollection.countDocuments({ 
-            assignedTo: agent.id,
-            status: 'completed'
-          });
-          const customerPending = customerTotal - customerCompleted;
-          
-          // Calculate overall stats
-          const overallTotal = crmTotal + customerTotal;
-          const overallCompleted = crmCompleted + customerCompleted;
-          const overallPending = crmPending + customerPending;
-          const completionPercentage = overallTotal > 0 
-            ? Math.round((overallCompleted / overallTotal) * 100)
-            : 0;
-          
-          agentData.push({
-            id: agent.id,
-            name: agent.name || agent.username,
-            email: agent.email,
-            crm: {
-              total: crmTotal,
-              completed: crmCompleted,
-              pending: crmPending
-            },
-            customerService: {
-              total: customerTotal,
-              completed: customerCompleted,
-              pending: customerPending
-            },
-            overall: {
-              total: overallTotal,
-              completed: overallCompleted,
-              pending: overallPending,
-              completionPercentage
-            }
-          });
-        }
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            agents: agentData,
-            timestamp: new Date().toISOString()
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } catch (error) {
-        console.error('[MANAGER] Agent monitoring error:', error);
-        return new Response(
-          JSON.stringify({ success: false, error: error.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
+    // /agent-monitoring/overview - Moved to line 1430 to be before MongoDB check
     
     // GET /agent-monitoring/agent/:id - Get detailed agent metrics
     if (path.startsWith('/agent-monitoring/agent/') && req.method === 'GET') {
       const agentId = path.split('/').pop();
       console.log('[MANAGER] Agent detail requested for:', agentId);
       
-      if (!mongoInitialized) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Database not ready' }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
       }
       
       try {
@@ -783,12 +727,9 @@ Deno.serve(async (req) => {
     if (path === '/email-recipients' && req.method === 'GET') {
       console.log('[EMAIL-RECIPIENTS] Get email recipients requested');
       
-      // Check MongoDB ready
-      if (!mongoInitialized) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Database not ready' }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
       }
       
       try {
@@ -1418,17 +1359,10 @@ Deno.serve(async (req) => {
     if (path === '/agent-monitoring/overview' && req.method === 'GET') {
       console.log('✅ /agent-monitoring/overview endpoint HIT!');
       
-      // Check if MongoDB is ready
-      if (!mongoInitialized) {
-        console.log('⚠️  MongoDB not ready yet - returning empty agents data');
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            agents: [],
-            message: 'MongoDB initializing - agents data will load shortly'
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      // Check if MongoDB is ready (with auto-initialization)
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
       }
       
       try {
@@ -1448,18 +1382,39 @@ Deno.serve(async (req) => {
           });
           
           // Get customer service assignments
-          const customerAssignments = await customersCollection.countDocuments({ assignedAgent: agent.id });
+          const totalCustomerAssignments = await customersCollection.countDocuments({ 
+            assignedAgent: agent.id 
+          });
+          const completedCustomerAssignments = await customersCollection.countDocuments({ 
+            assignedAgent: agent.id,
+            status: 'completed'
+          });
+          
+          // Calculate totals
+          const overallTotal = totalCRMAssignments + totalCustomerAssignments;
+          const overallCompleted = completedCRMAssignments + completedCustomerAssignments;
+          const overallPending = overallTotal - overallCompleted;
           
           return {
             id: agent.id,
             name: agent.name || agent.username || 'Unknown',
             email: agent.email || '',
-            overall: {
-              total: totalCRMAssignments + customerAssignments,
+            crm: {
+              total: totalCRMAssignments,
               completed: completedCRMAssignments,
-              pending: totalCRMAssignments - completedCRMAssignments + customerAssignments,
-              completionPercentage: totalCRMAssignments > 0 
-                ? Math.round((completedCRMAssignments / totalCRMAssignments) * 100) 
+              pending: totalCRMAssignments - completedCRMAssignments
+            },
+            customerService: {
+              total: totalCustomerAssignments,
+              completed: completedCustomerAssignments,
+              pending: totalCustomerAssignments - completedCustomerAssignments
+            },
+            overall: {
+              total: overallTotal,
+              completed: overallCompleted,
+              pending: overallPending,
+              completionPercentage: overallTotal > 0 
+                ? Math.round((overallCompleted / overallTotal) * 100) 
                 : 0
             }
           };
@@ -1490,19 +1445,9 @@ Deno.serve(async (req) => {
     if (path === '/database/customers' && req.method === 'GET') {
       console.log('[DATABASE] Get all customers requested');
       
-      // Check if MongoDB is ready
-      if (!mongoInitialized) {
-        console.log('⚠️  MongoDB not ready yet - returning empty customers data');
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            records: [],
-            customers: [],
-            count: 0,
-            message: 'MongoDB initializing - customers data will load shortly'
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
       }
       
       try {
@@ -1537,19 +1482,9 @@ Deno.serve(async (req) => {
     if (path === '/database/clients' && req.method === 'GET') {
       console.log('[DATABASE] Get all clients requested');
       
-      // Check if MongoDB is ready
-      if (!mongoInitialized) {
-        console.log('⚠️  MongoDB not ready yet - returning empty clients data');
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            records: [],
-            clients: [],
-            count: 0,
-            message: 'MongoDB initializing - clients data will load shortly'
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
       }
       
       try {
@@ -1582,7 +1517,7 @@ Deno.serve(async (req) => {
 
     // ==================== CHECK MONGODB READINESS ====================
     // For all non-health/test endpoints, check if MongoDB is ready
-    const mongoCheck = checkMongoReady();
+    const mongoCheck = await checkMongoReady();
     if (mongoCheck) {
       return mongoCheck;
     }
@@ -2027,6 +1962,115 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ==================== ARCHIVE MANAGEMENT ====================
+    // Get all archived records
+    if (path === '/archive' && req.method === 'GET') {
+      console.log('[ARCHIVE] Getting all archived records');
+      const archiveCollection = await getCollection(Collections.ARCHIVE);
+      const archived = await archiveCollection.find({}).sort({ archivedAt: -1 }).toArray();
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          records: convertMongoDocs(archived),
+          count: archived.length
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Restore a record from archive (recycle)
+    if (path === '/archive/restore' && req.method === 'POST') {
+      const body = await req.json();
+      const { recordId, recordType } = body; // recordType: 'client' or 'customer'
+      
+      console.log('[ARCHIVE] Restoring record:', recordId, 'type:', recordType);
+      
+      try {
+        const archiveCollection = await getCollection(Collections.ARCHIVE);
+        const numbersCollection = await getCollection(Collections.NUMBERS_DATABASE);
+        const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
+        
+        // Find the archived record
+        const archivedRecord = await archiveCollection.findOne({ id: recordId });
+        
+        if (!archivedRecord) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Archived record not found' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Restore to appropriate database
+        const restoredData = {
+          ...archivedRecord.numberData || archivedRecord.entityData || archivedRecord,
+          id: archivedRecord.originalId || generateId(),
+          status: 'available',
+          assignedTo: null,
+          assignedAt: null,
+          assignedBy: null,
+          restoredAt: new Date().toISOString(),
+          restoredFrom: 'archive'
+        };
+        
+        // Remove archive-specific fields
+        delete restoredData.archivedAt;
+        delete restoredData.archivedBy;
+        delete restoredData.callOutcome;
+        delete restoredData.calledAt;
+        delete restoredData.assignmentId;
+        delete restoredData.agentId;
+        delete restoredData.agentName;
+        delete restoredData._id;
+        
+        if (recordType === 'customer' || archivedRecord.type === 'customer') {
+          await customersCollection.insertOne(restoredData);
+          console.log('[ARCHIVE] ✅ Restored to customers database');
+        } else {
+          await numbersCollection.insertOne(restoredData);
+          console.log('[ARCHIVE] ✅ Restored to numbers database');
+        }
+        
+        // Remove from archive
+        await archiveCollection.deleteOne({ id: recordId });
+        console.log('[ARCHIVE] ✅ Removed from archive');
+        
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('[ARCHIVE] Restore error:', error);
+        return new Response(
+          JSON.stringify({ success: false, error: error.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Permanently delete from archive
+    if (path === '/archive/delete' && req.method === 'POST') {
+      const body = await req.json();
+      const { recordId } = body;
+      
+      console.log('[ARCHIVE] Permanently deleting record:', recordId);
+      
+      const archiveCollection = await getCollection(Collections.ARCHIVE);
+      const result = await archiveCollection.deleteOne({ id: recordId });
+      
+      if (result.deletedCount === 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Record not found in archive' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Add customer(s)
     if (path === '/customers' && req.method === 'POST') {
       const body = await req.json();
@@ -2111,22 +2155,95 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { assignmentId, outcome } = body;
       
-      const collection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
-      await collection.updateOne(
-        { id: assignmentId },
-        { 
-          $set: { 
-            called: true, 
-            calledAt: new Date().toISOString(),
-            outcome: outcome || 'completed'
-          } 
-        }
-      );
+      console.log('[MARK-CALLED] Processing assignment:', assignmentId, 'outcome:', outcome);
       
-      return new Response(
-        JSON.stringify({ success: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      try {
+        const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
+        const archiveCollection = await getCollection(Collections.ARCHIVE);
+        const numbersCollection = await getCollection(Collections.NUMBERS_DATABASE);
+        const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
+        
+        // Get the assignment to determine type
+        const assignment = await assignmentsCollection.findOne({ id: assignmentId });
+        
+        if (!assignment) {
+          console.error('[MARK-CALLED] Assignment not found:', assignmentId);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Assignment not found' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const now = new Date().toISOString();
+        
+        // Mark assignment as called
+        await assignmentsCollection.updateOne(
+          { id: assignmentId },
+          { 
+            $set: { 
+              called: true, 
+              calledAt: now,
+              outcome: outcome || 'completed'
+            } 
+          }
+        );
+        
+        // Create archive record
+        const archiveRecord = {
+          id: generateId(),
+          originalId: assignment.numberId || assignment.id,
+          type: assignment.type || 'client', // 'client' or 'customer'
+          ...assignment.numberData,
+          assignmentId: assignment.id,
+          agentId: assignment.agentId,
+          agentName: assignment.agentName,
+          assignedAt: assignment.assignedAt,
+          calledAt: now,
+          callOutcome: outcome || 'completed',
+          archivedAt: now,
+          archivedBy: assignment.agentId || 'system',
+          status: 'archived'
+        };
+        
+        // Insert into archive
+        await archiveCollection.insertOne(archiveRecord);
+        console.log('[MARK-CALLED] ✅ Archived to archive collection');
+        
+        // Remove from source database
+        if (assignment.numberId) {
+          // Check if this is from numbers database (clients)
+          const numberExists = await numbersCollection.findOne({ id: assignment.numberId });
+          if (numberExists) {
+            await numbersCollection.deleteOne({ id: assignment.numberId });
+            console.log('[MARK-CALLED] ✅ Removed from numbers database');
+          }
+        }
+        
+        // Also try to remove from customers database if it's there
+        if (assignment.numberData?.phone) {
+          const customerExists = await customersCollection.findOne({ 
+            phone: assignment.numberData.phone,
+            assignedTo: assignment.agentId
+          });
+          if (customerExists) {
+            await customersCollection.deleteOne({ id: customerExists.id });
+            console.log('[MARK-CALLED] ✅ Removed from customers database');
+          }
+        }
+        
+        console.log('[MARK-CALLED] ✅ Assignment marked as called and archived successfully');
+        
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('[MARK-CALLED] Error:', error);
+        return new Response(
+          JSON.stringify({ success: false, error: error.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // ==================== USERS ====================
@@ -2310,6 +2427,11 @@ Deno.serve(async (req) => {
 
     // ==================== SMTP SETTINGS ====================
     if (path === '/smtp-settings' && req.method === 'GET') {
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
+      }
+      
       const collection = await getCollection(Collections.SMTP_SETTINGS);
       const settings = await collection.findOne({ type: 'smtp' });
       return new Response(
@@ -2499,6 +2621,11 @@ Deno.serve(async (req) => {
     }
 
     if (path === '/daily-progress/check-reset' && req.method === 'GET') {
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
+      }
+      
       const collection = await getCollection(Collections.DAILY_PROGRESS);
       const progressData = await collection.findOne({ type: 'daily' });
       
@@ -2546,6 +2673,11 @@ Deno.serve(async (req) => {
     }
 
     if (path === '/daily-progress/reset' && req.method === 'POST') {
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
+      }
+      
       const collection = await getCollection(Collections.DAILY_PROGRESS);
       
       await collection.updateOne(
@@ -2567,6 +2699,11 @@ Deno.serve(async (req) => {
 
     // ==================== PROMOTIONS ====================
     if (path === '/promotions' && req.method === 'GET') {
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
+      }
+      
       const collection = await getCollection(Collections.PROMOTIONS);
       const promotions = await collection.find({}).toArray();
       return new Response(

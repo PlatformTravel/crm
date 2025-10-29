@@ -113,6 +113,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       // Silently fail - server sync is optional, daily reset is handled client-side
+      // Suppress database initialization errors (503) - they are expected during startup
+      const { isDatabaseInitializing } = await import('../utils/backendService');
+      if (isDatabaseInitializing(error)) {
+        // Database is still initializing, silently skip
+        return;
+      }
+      
       // Only log if it's not a network error
       if (!(error instanceof TypeError && error.message.includes('fetch'))) {
         console.error('[USER CONTEXT] Error checking daily reset:', error);

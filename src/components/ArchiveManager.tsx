@@ -49,28 +49,27 @@ export function ArchiveManager() {
 
   const loadArchivedRecords = async () => {
     try {
-      // Load archived records from backend
-      // Combining both archived contacts and customers
-      const [contactsData, customersData] = await Promise.all([
-        backendService.getArchivedContacts().catch(() => ({ success: false, contacts: [] })),
-        backendService.getArchivedCustomers().catch(() => ({ success: false, customers: [] }))
-      ]);
+      // Load all archived records from backend
+      const data = await backendService.getAllArchived();
 
-      const contacts = (contactsData.contacts || []).map((c: any) => ({
-        ...c,
-        type: 'client' as const,
-        archivedAt: c.archivedAt || new Date().toISOString(),
-        archivedBy: c.archivedBy || 'System',
-      }));
+      if (data.success && data.records) {
+        const records = data.records.map((record: any) => ({
+          id: record.id,
+          name: record.name || record.numberData?.name || record.entityData?.name || 'N/A',
+          phone: record.phone || record.numberData?.phone || record.entityData?.phone || record.phoneNumber || 'N/A',
+          email: record.email || record.numberData?.email || record.entityData?.email || '',
+          company: record.company || record.numberData?.company || record.entityData?.company || '',
+          type: record.type || record.entityType || 'client',
+          archivedAt: record.archivedAt || new Date().toISOString(),
+          archivedBy: record.archivedBy || record.agentName || 'System',
+          callOutcome: record.callOutcome || record.outcome || 'N/A',
+        }));
 
-      const customers = (customersData.customers || []).map((c: any) => ({
-        ...c,
-        type: 'customer' as const,
-        archivedAt: c.archivedAt || new Date().toISOString(),
-        archivedBy: c.archivedBy || 'System',
-      }));
-
-      setArchivedRecords([...contacts, ...customers]);
+        setArchivedRecords(records);
+        console.log(`[ARCHIVE] Loaded ${records.length} archived records`);
+      } else {
+        setArchivedRecords([]);
+      }
     } catch (error) {
       console.error("Failed to load archived records:", error);
       setArchivedRecords([]);
@@ -79,10 +78,18 @@ export function ArchiveManager() {
     }
   };
 
-  const handleRestore = async (recordId: string) => {
+  const handleRestore = async (record: ArchivedRecord) => {
     try {
-      toast.success("Record restored successfully");
-      loadArchivedRecords();
+      toast.loading("Restoring record...");
+      
+      const result = await backendService.restoreFromArchive(record.id, record.type);
+      
+      if (result.success) {
+        toast.success(`${record.type === 'client' ? 'Client' : 'Customer'} restored successfully`);
+        loadArchivedRecords();
+      } else {
+        toast.error(result.error || "Failed to restore record");
+      }
     } catch (error) {
       console.error("Failed to restore record:", error);
       toast.error("Failed to restore record");
@@ -95,8 +102,16 @@ export function ArchiveManager() {
     }
 
     try {
-      toast.success("Record permanently deleted");
-      loadArchivedRecords();
+      toast.loading("Deleting record...");
+      
+      const result = await backendService.deleteFromArchive(recordId);
+      
+      if (result.success) {
+        toast.success("Record permanently deleted");
+        loadArchivedRecords();
+      } else {
+        toast.error(result.error || "Failed to delete record");
+      }
     } catch (error) {
       console.error("Failed to delete record:", error);
       toast.error("Failed to delete record");
@@ -274,7 +289,7 @@ export function ArchiveManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleRestore(record.id)}
+                            onClick={() => handleRestore(record)}
                           >
                             Restore
                           </Button>

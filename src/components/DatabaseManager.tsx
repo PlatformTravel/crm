@@ -73,9 +73,16 @@ export function DatabaseManager() {
         availableClients: totalClients - assignedClients,
         availableCustomers: totalCustomers - assignedCustomers
       });
-    } catch (error) {
-      console.error("Failed to load database stats:", error);
-      toast.error("Failed to load database statistics");
+    } catch (error: any) {
+      // Check if it's a database initialization error
+      if (error.message?.includes('503') && 
+          (error.message?.includes('not_initialized') || error.message?.includes('Database not ready'))) {
+        console.log('Database is initializing, will retry automatically...');
+        toast.info('Database is warming up... This may take a moment.', { duration: 3000 });
+      } else {
+        console.error("Failed to load database stats:", error);
+        toast.error("Failed to load database statistics");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -67,9 +67,14 @@ export function AgentMonitoring() {
       if (data.success) {
         setAgents(data.agents);
       }
-    } catch (error) {
-      // Silently fail if server is offline
-      if (!(error instanceof TypeError && error.message.includes('fetch'))) {
+    } catch (error: any) {
+      // Check if it's a database initialization error
+      if (error.message?.includes('503') && 
+          (error.message?.includes('not_initialized') || error.message?.includes('Database not ready'))) {
+        console.log('Database is initializing, will retry automatically...');
+        toast.info('Database is warming up... This may take a moment.', { duration: 3000 });
+      } else if (!(error instanceof TypeError && error.message.includes('fetch'))) {
+        // Silently fail if server is offline
         console.error('Error fetching agents:', error);
         toast.error('Failed to load agent data');
       }
@@ -595,10 +600,10 @@ export function AgentMonitoring() {
 
       {/* Agent Portal View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] border-0 bg-white/95 backdrop-blur-xl shadow-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] w-[1200px] max-h-[90vh] border-0 bg-white/95 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white shadow-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white shadow-lg flex-shrink-0">
                 {selectedAgent?.agent.name.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -612,8 +617,8 @@ export function AgentMonitoring() {
           </DialogHeader>
 
           {selectedAgent && (
-            <Tabs defaultValue="crm" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-purple-100/50 p-1">
+            <Tabs defaultValue="crm" className="w-full flex-1 flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-2 bg-purple-100/50 p-1 flex-shrink-0">
                 <TabsTrigger 
                   value="crm"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white transition-all duration-300"
@@ -630,110 +635,114 @@ export function AgentMonitoring() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="crm" className="space-y-4">
-                <ScrollArea className="h-[500px] w-full rounded-xl border border-purple-100/50 bg-white/60 backdrop-blur-sm p-4">
+              <TabsContent value="crm" className="flex-1 mt-4 min-h-0">
+                <div className="h-full rounded-xl border border-purple-100/50 bg-white/60 backdrop-blur-sm overflow-hidden flex flex-col">
                   {(selectedAgent.data?.crmRecords?.length || 0) === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 mb-4">
                         <Clock className="h-8 w-8 text-blue-500" />
                       </div>
                       <p>No CRM clients assigned</p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100">
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Last Contact</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(selectedAgent.data?.crmRecords || []).map((record, index) => (
-                          <TableRow key={record.id || index} className="hover:bg-blue-50/50 transition-colors duration-200">
-                            <TableCell>{record.name || 'N/A'}</TableCell>
-                            <TableCell>{record.email || 'N/A'}</TableCell>
-                            <TableCell>{record.phone || record.number || 'N/A'}</TableCell>
-                            <TableCell>
-                              {record.status === 'completed' || record.callCompleted || record.lastContact ? (
-                                <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 border-0">
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Completed
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="border border-orange-200">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  Pending
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {record.lastContact 
-                                ? new Date(record.lastContact).toLocaleDateString() 
-                                : <span className="text-muted-foreground">Never</span>}
-                            </TableCell>
+                    <div className="overflow-auto flex-1">
+                      <Table>
+                        <TableHeader className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
+                          <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100">
+                            <TableHead className="min-w-[150px]">Name</TableHead>
+                            <TableHead className="min-w-[200px]">Email</TableHead>
+                            <TableHead className="min-w-[150px]">Phone</TableHead>
+                            <TableHead className="min-w-[120px]">Status</TableHead>
+                            <TableHead className="min-w-[120px]">Last Contact</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {(selectedAgent.data?.crmRecords || []).map((record, index) => (
+                            <TableRow key={record.id || index} className="hover:bg-blue-50/50 transition-colors duration-200">
+                              <TableCell className="min-w-[150px]">{record.name || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[200px] break-all">{record.email || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[150px]">{record.phone || record.number || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[120px]">
+                                {record.status === 'completed' || record.callCompleted || record.lastContact ? (
+                                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 border-0 whitespace-nowrap">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Completed
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="border border-orange-200 whitespace-nowrap">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Pending
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="min-w-[120px]">
+                                {record.lastContact 
+                                  ? new Date(record.lastContact).toLocaleDateString() 
+                                  : <span className="text-muted-foreground">Never</span>}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
-                </ScrollArea>
+                </div>
               </TabsContent>
 
-              <TabsContent value="customer" className="space-y-4">
-                <ScrollArea className="h-[500px] w-full rounded-xl border border-purple-100/50 bg-white/60 backdrop-blur-sm p-4">
+              <TabsContent value="customer" className="flex-1 mt-4 min-h-0">
+                <div className="h-full rounded-xl border border-purple-100/50 bg-white/60 backdrop-blur-sm overflow-hidden flex flex-col">
                   {(selectedAgent.data?.customerRecords?.length || 0) === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 mb-4">
                         <Clock className="h-8 w-8 text-purple-500" />
                       </div>
                       <p>No customers assigned</p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100">
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Booking</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Last Contact</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(selectedAgent.data?.customerRecords || []).map((record, index) => (
-                          <TableRow key={record.id || index} className="hover:bg-purple-50/50 transition-colors duration-200">
-                            <TableCell>{record.name || 'N/A'}</TableCell>
-                            <TableCell>{record.email || 'N/A'}</TableCell>
-                            <TableCell>{record.phone || record.number || 'N/A'}</TableCell>
-                            <TableCell>{record.bookingReference || 'N/A'}</TableCell>
-                            <TableCell>
-                              {record.status === 'completed' || record.callCompleted || record.lastContact ? (
-                                <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 border-0">
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Completed
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="border border-orange-200">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  Pending
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {record.lastContact 
-                                ? new Date(record.lastContact).toLocaleDateString() 
-                                : <span className="text-muted-foreground">Never</span>}
-                            </TableCell>
+                    <div className="overflow-auto flex-1">
+                      <Table>
+                        <TableHeader className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
+                          <TableRow className="bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100">
+                            <TableHead className="min-w-[150px]">Name</TableHead>
+                            <TableHead className="min-w-[200px]">Email</TableHead>
+                            <TableHead className="min-w-[150px]">Phone</TableHead>
+                            <TableHead className="min-w-[150px]">Booking</TableHead>
+                            <TableHead className="min-w-[120px]">Status</TableHead>
+                            <TableHead className="min-w-[120px]">Last Contact</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {(selectedAgent.data?.customerRecords || []).map((record, index) => (
+                            <TableRow key={record.id || index} className="hover:bg-purple-50/50 transition-colors duration-200">
+                              <TableCell className="min-w-[150px]">{record.name || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[200px] break-all">{record.email || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[150px]">{record.phone || record.number || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[150px]">{record.bookingReference || 'N/A'}</TableCell>
+                              <TableCell className="min-w-[120px]">
+                                {record.status === 'completed' || record.callCompleted || record.lastContact ? (
+                                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 border-0 whitespace-nowrap">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Completed
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="border border-orange-200 whitespace-nowrap">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Pending
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="min-w-[120px]">
+                                {record.lastContact 
+                                  ? new Date(record.lastContact).toLocaleDateString() 
+                                  : <span className="text-muted-foreground">Never</span>}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
-                </ScrollArea>
+                </div>
               </TabsContent>
             </Tabs>
           )}
