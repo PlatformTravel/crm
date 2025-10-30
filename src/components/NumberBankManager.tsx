@@ -161,6 +161,13 @@ export function NumberBankManager() {
     }
 
     const bank = assignType === "client" ? clientBank : customerBank;
+    
+    // Check if there are any numbers available
+    if (bank.length === 0) {
+      toast.error(`No ${assignType}s available in the bank. All numbers are already assigned.`);
+      return;
+    }
+    
     if (count > bank.length) {
       toast.error(`Only ${bank.length} ${assignType}s available in the bank`);
       return;
@@ -178,7 +185,7 @@ export function NumberBankManager() {
         setShowAssignDialog(false);
         setSelectedAgent("");
         setAssignCount("");
-        loadData();
+        await loadData();
       } else {
         // Show detailed error message with debug info if available
         const errorMsg = response.error || "Failed to assign numbers";
@@ -193,28 +200,16 @@ export function NumberBankManager() {
           toast.error(errorMsg);
         }
         
-        // If it's a "no available numbers" error, suggest fixing the database
-        if (errorMsg.includes("No available numbers")) {
-          setTimeout(() => {
-            toast.info("Try clicking 'Fix Database' in the Database tab to resolve assignment issues", {
-              duration: 7000
-            });
-          }, 1500);
-        }
+        // Reload data to sync with backend state
+        await loadData();
       }
     } catch (error: any) {
       console.error("Assignment error:", error);
       const errorMsg = error.message || "Failed to assign numbers";
       toast.error(errorMsg);
       
-      // Show helpful hint if it's a 400 error
-      if (error.message?.includes("400")) {
-        setTimeout(() => {
-          toast.info("Visit the Database tab and click 'Fix Database' to resolve this issue", {
-            duration: 7000
-          });
-        }, 1500);
-      }
+      // Reload data to ensure UI is in sync with backend
+      await loadData();
     }
   };
 

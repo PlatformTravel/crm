@@ -1461,7 +1461,26 @@ Deno.serve(async (req) => {
       
       try {
         const collection = await getCollection(Collections.CUSTOMERS_DATABASE);
-        const customers = await collection.find({}).toArray();
+        // Only return UNASSIGNED customers (available for assignment)
+        const customers = await collection.find({
+          $or: [
+            { status: { $exists: false } },
+            { status: null },
+            { status: 'available' },
+            { status: { $ne: 'assigned' } }
+          ],
+          $and: [
+            {
+              $or: [
+                { assignedTo: { $exists: false } },
+                { assignedTo: null },
+                { assignedTo: '' }
+              ]
+            }
+          ]
+        }).toArray();
+        
+        console.log('[DATABASE] Returning unassigned customers:', customers.length);
         
         return new Response(
           JSON.stringify({ 
@@ -1498,7 +1517,26 @@ Deno.serve(async (req) => {
       
       try {
         const collection = await getCollection(Collections.NUMBERS_DATABASE);
-        const clients = await collection.find({}).toArray();
+        // Only return UNASSIGNED clients (available for assignment)
+        const clients = await collection.find({
+          $or: [
+            { status: { $exists: false } },
+            { status: null },
+            { status: 'available' },
+            { status: { $ne: 'assigned' } }
+          ],
+          $and: [
+            {
+              $or: [
+                { assignedTo: { $exists: false } },
+                { assignedTo: null },
+                { assignedTo: '' }
+              ]
+            }
+          ]
+        }).toArray();
+        
+        console.log('[DATABASE] Returning unassigned clients:', clients.length);
         
         return new Response(
           JSON.stringify({ 
@@ -1595,19 +1633,8 @@ Deno.serve(async (req) => {
     }
 
     // ==================== DATABASE - NUMBERS ====================
-    if (path === '/database/clients' && req.method === 'GET') {
-      const collection = await getCollection(Collections.NUMBERS_DATABASE);
-      const clients = await collection.find({ status: { $ne: 'assigned' } }).toArray();
-      const convertedClients = convertMongoDocs(clients);
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          clients: convertedClients,
-          records: convertedClients  // For consistency with customers endpoint
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // NOTE: /database/clients GET endpoint is now handled earlier in the file (line ~1491)
+    // with proper unassigned filtering. This duplicate has been removed.
 
     if (path === '/database/clients/import' && req.method === 'POST') {
       const body = await req.json();
@@ -1927,21 +1954,8 @@ Deno.serve(async (req) => {
     }
 
     // ==================== DATABASE - CUSTOMERS ====================
-    if (path === '/database/customers' && req.method === 'GET') {
-      const collection = await getCollection(Collections.CUSTOMERS_DATABASE);
-      // Only return unassigned customers (available for assignment)
-      const customers = await collection.find({
-        $or: [
-          { assignedTo: { $exists: false } },
-          { assignedTo: null },
-          { assignedTo: '' }
-        ]
-      }).toArray();
-      return new Response(
-        JSON.stringify({ success: true, records: convertMongoDocs(customers) }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // NOTE: /database/customers GET endpoint is now handled earlier in the file (line ~1453)
+    // with proper unassigned filtering. This duplicate has been removed.
 
     if (path === '/database/customers/import' && req.method === 'POST') {
       const body = await req.json();
@@ -2036,8 +2050,30 @@ Deno.serve(async (req) => {
       }
       
       if (customersToAssign.length === 0) {
+        console.log('[DATABASE] ❌ No available customers found matching criteria');
+        
+        // Check if there are ANY customers in the database
+        const totalCustomers = await customersCollection.countDocuments({});
+        const assignedCustomers = await customersCollection.countDocuments({ 
+          assignedTo: { $exists: true, $ne: null, $ne: '' }
+        });
+        
         return new Response(
-          JSON.stringify({ success: false, error: 'No available numbers match criteria' }),
+          JSON.stringify({ 
+            success: false, 
+            error: 'No available numbers match criteria',
+            debug: {
+              totalInDatabase: totalCustomers,
+              alreadyAssigned: assignedCustomers,
+              available: totalCustomers - assignedCustomers,
+              filters: filters || 'specific IDs',
+              suggestion: totalCustomers === 0 
+                ? 'No customers in database. Please upload customers first.'
+                : assignedCustomers === totalCustomers
+                  ? 'All customers are already assigned. Please import more customers or unassign existing ones.'
+                  : 'No customers match your filter criteria. Try different filters.'
+            }
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
