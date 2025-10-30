@@ -2208,15 +2208,23 @@ Deno.serve(async (req) => {
       const archiveCollection = await getCollection(Collections.ARCHIVE);
       const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
       
+      // Use customer.id as archive ID to avoid duplicates
       const archiveEntry = {
-        id: generateId(),
+        id: customer.id,
         entityType: 'customer',
         entityData: customer,
         archivedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         archivedBy: body.archivedBy || 'system',
       };
       
-      await archiveCollection.insertOne(archiveEntry);
+      // Use replaceOne with upsert to avoid duplicate key errors
+      await archiveCollection.replaceOne(
+        { id: customer.id },
+        archiveEntry,
+        { upsert: true }
+      );
+      
       await customersCollection.deleteOne({ id: customer.id });
       
       return new Response(
@@ -2235,6 +2243,69 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: true, deletedCount: result.deletedCount }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Log customer interaction and update completion status
+    if (path === '/customer-interactions' && req.method === 'POST') {
+      const body = await req.json();
+      const { customerId, interaction } = body;
+      
+      console.log('[CUSTOMER INTERACTIONS] Logging interaction for customer:', customerId);
+      
+      try {
+        const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
+        const archiveCollection = await getCollection(Collections.ARCHIVE);
+        
+        // Create interaction log entry
+        const interactionLog = {
+          id: generateId(),
+          customerId,
+          ...interaction,
+          timestamp: new Date().toISOString(),
+        };
+        
+        // Store interaction in archive collection with type 'interaction'
+        const interactionEntry = {
+          id: interactionLog.id,
+          entityType: 'interaction',
+          entityData: interactionLog,
+          archivedAt: new Date().toISOString(),
+        };
+        
+        await archiveCollection.insertOne(interactionEntry);
+        
+        // Update customer record with interactionCompleted flag
+        await customersCollection.updateOne(
+          { id: customerId },
+          { 
+            $set: { 
+              interactionCompleted: true,
+              lastInteractionAt: new Date().toISOString(),
+              lastInteractionOutcome: interaction.outcome || 'completed'
+            } 
+          }
+        );
+        
+        console.log('[CUSTOMER INTERACTIONS] ✅ Interaction logged successfully for:', customerId);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Interaction logged successfully',
+            interactionId: interactionLog.id
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error: any) {
+        console.error('[CUSTOMER INTERACTIONS] Error logging interaction:', error);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: error.message || 'Failed to log interaction'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // ==================== ARCHIVE MANAGEMENT ====================
@@ -3424,6 +3495,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get assigned customers for an agent
+    if (path.match(/^\/database\/customers\/assigned\/[^/]+$/) && req.method === 'GET') {
+      const agentId = path.split('/')[4];
+      const collection = await getCollection(Collections.CUSTOMERS_DATABASE);
+      
+      const customers = await collection.find({ assignedTo: agentId }).toArray();
+      
+      console.log(`[CUSTOMER SERVICE] Fetching customers for agent ${agentId}: found ${customers.length} customers`);
+      
+      return new Response(
+        JSON.stringify({ success: true, customers: convertMongoDocs(customers) }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Reset all customers' interactionCompleted flags (utility endpoint)
+    if (path === '/database/customers/reset-completion' && req.method === 'POST') {
+      const collection = await getCollection(Collections.CUSTOMERS_DATABASE);
+      
+      const result = await collection.updateMany(
+        {},
+        { $set: { interactionCompleted: false } }
+      );
+      
+      console.log(`[CUSTOMER SERVICE] Reset interactionCompleted for ${result.modifiedCount} customers`);
+      
+      return new Response(
+        JSON.stringify({ success: true, resetCount: result.modifiedCount }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Log customer interaction
     if (path === '/customer-interactions' && req.method === 'POST') {
       const body = await req.json();
@@ -3633,13 +3736,23 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const collection = await getCollection(Collections.ARCHIVE);
       
+      // Use existing ID from body, or generate new one
+      const archiveId = body.id || generateId();
+      
       const archiveEntry = {
-        id: generateId(),
         ...body,
+        id: archiveId,
         archivedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       
-      await collection.insertOne(archiveEntry);
+      // Use replaceOne with upsert to avoid duplicate key errors
+      // If document with same _id exists, it will be replaced
+      await collection.replaceOne(
+        { id: archiveId },
+        archiveEntry,
+        { upsert: true }
+      );
       
       return new Response(
         JSON.stringify({ success: true, archive: convertMongoDoc(archiveEntry) }),

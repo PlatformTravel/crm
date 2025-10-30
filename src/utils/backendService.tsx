@@ -494,6 +494,12 @@ export const backendService = {
     });
   },
 
+  async resetCustomerCompletion() {
+    return backendFetch('/database/customers/reset-completion', {
+      method: 'POST',
+    });
+  },
+
   async addCustomer(customer: any) {
     return backendFetch('/customers', {
       method: 'POST',
