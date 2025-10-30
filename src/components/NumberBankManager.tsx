@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Users,
   Zap,
-  Target
+  Target,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { backendService } from "../utils/backendService";
@@ -89,6 +90,62 @@ export function NumberBankManager() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
+  };
+
+  const handleUnassignAll = async (type: 'client' | 'customer') => {
+    if (!confirm(`Are you sure you want to unassign ALL ${type}s? This will make them available for new assignments.`)) {
+      return;
+    }
+
+    try {
+      const endpoint = type === 'client' 
+        ? '/database/clients/unassign-all' 
+        : '/database/customers/unassign-all';
+      
+      const response = await fetch(`http://localhost:8000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(data.message);
+        await loadData();
+      } else {
+        toast.error(data.error || 'Failed to unassign');
+      }
+    } catch (error) {
+      console.error('Failed to unassign:', error);
+      toast.error('Failed to unassign. Please try again.');
+    }
+  };
+
+  const handleRecycleCompleted = async () => {
+    try {
+      toast.info('Recycling completed assignments...', { duration: 2000 });
+      
+      const response = await fetch('http://localhost:8000/database/clients/recycle-completed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        if (data.recycled > 0) {
+          toast.success(data.message);
+        } else {
+          toast.info(data.message);
+        }
+        await loadData();
+      } else {
+        toast.error(data.error || 'Failed to recycle');
+      }
+    } catch (error) {
+      console.error('Failed to recycle:', error);
+      toast.error('Failed to recycle assignments. Please try again.');
+    }
   };
 
   const handleAssignNumbers = async () => {
@@ -374,12 +431,35 @@ export function NumberBankManager() {
               <p className="text-muted-foreground">Available Clients</p>
             </div>
             {clientBank.length === 0 && (
-              <Alert className="border-0 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md">
-                <AlertCircle className="w-4 h-4 text-blue-600" />
-                <AlertDescription className="text-blue-700">
-                  No clients available. Import clients from Database Manager.
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-3">
+                <Alert className="border-0 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md">
+                  <AlertCircle className="w-4 h-4 text-orange-600" />
+                  <AlertDescription className="text-orange-700">
+                    <strong>All clients are assigned!</strong> Choose an action below:
+                  </AlertDescription>
+                </Alert>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={handleRecycleCompleted}
+                    variant="outline"
+                    className="w-full border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Recycle Completed Calls
+                  </Button>
+                  <Button 
+                    onClick={() => handleUnassignAll('client')}
+                    variant="outline"
+                    className="w-full border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Unassign All Clients
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Or import more clients from Database Manager
+                  </p>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -404,12 +484,27 @@ export function NumberBankManager() {
               <p className="text-muted-foreground">Available Customers</p>
             </div>
             {customerBank.length === 0 && (
-              <Alert className="border-0 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md">
-                <AlertCircle className="w-4 h-4 text-green-600" />
-                <AlertDescription className="text-green-700">
-                  No customers available. Import customers from Database Manager.
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-3">
+                <Alert className="border-0 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md">
+                  <AlertCircle className="w-4 h-4 text-orange-600" />
+                  <AlertDescription className="text-orange-700">
+                    <strong>All customers are assigned!</strong> Choose an action below:
+                  </AlertDescription>
+                </Alert>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={() => handleUnassignAll('customer')}
+                    variant="outline"
+                    className="w-full border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Unassign All Customers
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Or import more customers from Database Manager
+                  </p>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

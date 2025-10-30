@@ -1791,6 +1791,105 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Bulk unassign clients/numbers endpoint
+    if (path === '/database/clients/unassign-all' && req.method === 'POST') {
+      console.log('[DATABASE] Bulk unassigning all clients...');
+      const numbersCollection = await getCollection(Collections.NUMBERS_DATABASE);
+      const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
+      
+      // Update all numbers back to available
+      const result = await numbersCollection.updateMany(
+        { 
+          $or: [
+            { status: 'assigned' },
+            { assignedTo: { $exists: true, $ne: null, $ne: '' } }
+          ]
+        },
+        { 
+          $set: { 
+            status: 'available',
+            assignedTo: null,
+            assignedAt: null
+          } 
+        }
+      );
+      
+      // Remove all active assignments
+      const assignmentsResult = await assignmentsCollection.deleteMany({
+        status: { $in: ['active', 'pending'] }
+      });
+      
+      console.log('[DATABASE] Unassigned numbers:', result.modifiedCount);
+      console.log('[DATABASE] Removed assignments:', assignmentsResult.deletedCount);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Unassigned ${result.modifiedCount} numbers and removed ${assignmentsResult.deletedCount} assignments`,
+          unassignedNumbers: result.modifiedCount,
+          removedAssignments: assignmentsResult.deletedCount
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Recycle completed client assignments back to available
+    if (path === '/database/clients/recycle-completed' && req.method === 'POST') {
+      console.log('[DATABASE] Recycling completed client assignments...');
+      const assignmentsCollection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
+      const numbersCollection = await getCollection(Collections.NUMBERS_DATABASE);
+      
+      // Find completed or called assignments
+      const completedAssignments = await assignmentsCollection.find({
+        $or: [
+          { status: 'completed' },
+          { called: true }
+        ]
+      }).toArray();
+      
+      if (completedAssignments.length === 0) {
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'No completed assignments to recycle',
+            recycled: 0
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const numberIds = completedAssignments.map((a: any) => a.numberId);
+      
+      // Update numbers back to available
+      const result = await numbersCollection.updateMany(
+        { id: { $in: numberIds } },
+        { 
+          $set: { 
+            status: 'available',
+            assignedTo: null,
+            assignedAt: null
+          } 
+        }
+      );
+      
+      // Archive the completed assignments
+      await assignmentsCollection.updateMany(
+        { id: { $in: completedAssignments.map((a: any) => a.id) } },
+        { $set: { status: 'archived' } }
+      );
+      
+      console.log('[DATABASE] Recycled numbers:', result.modifiedCount);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Recycled ${result.modifiedCount} completed numbers back to available`,
+          recycled: result.modifiedCount
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Migration endpoint to fix client/number status fields
     if (path === '/database/clients/migrate' && req.method === 'POST') {
       console.log('[DATABASE] Running client/number migration...');
@@ -1966,6 +2065,37 @@ Deno.serve(async (req) => {
       await collection.deleteOne({ id });
       return new Response(
         JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Bulk unassign customers endpoint
+    if (path === '/database/customers/unassign-all' && req.method === 'POST') {
+      console.log('[DATABASE] Bulk unassigning all customers...');
+      const customersCollection = await getCollection(Collections.CUSTOMERS_DATABASE);
+      
+      // Update all customers back to unassigned
+      const result = await customersCollection.updateMany(
+        { 
+          assignedTo: { $exists: true, $ne: null, $ne: '' }
+        },
+        { 
+          $set: { 
+            assignedTo: null,
+            assignedAt: null,
+            assignedBy: null
+          } 
+        }
+      );
+      
+      console.log('[DATABASE] Unassigned customers:', result.modifiedCount);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Unassigned ${result.modifiedCount} customers`,
+          unassigned: result.modifiedCount
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
