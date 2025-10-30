@@ -192,18 +192,23 @@ export function ConnectionStatus() {
           </Alert>
         )}
 
-        {/* Error State */}
+        {/* Error State - Now showing as info with offline mode */}
         {status === 'disconnected' && (
-          <Alert variant="destructive">
-            <WifiOff className="h-4 w-4" />
+          <Alert className="border-amber-300 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertDescription>
               <div className="space-y-2">
-                <p><strong>Cannot connect to backend server</strong></p>
-                <p className="text-sm">Make sure the backend is running:</p>
-                <pre className="bg-black/10 p-2 rounded text-xs overflow-x-auto">
-                  cd backend{'\n'}
-                  deno run --allow-net --allow-env server.tsx
-                </pre>
+                <p className="text-amber-900"><strong>🔌 Backend Offline - Running in Local Mode</strong></p>
+                <p className="text-sm text-amber-800">
+                  The app is using localStorage (browser storage) for data. All changes are saved locally.
+                </p>
+                <details className="text-xs text-amber-700 mt-2">
+                  <summary className="cursor-pointer hover:underline">Want to start the backend server?</summary>
+                  <pre className="bg-black/10 p-2 rounded text-xs overflow-x-auto mt-2">
+                    cd backend{'\n'}
+                    deno run --allow-all server.tsx
+                  </pre>
+                </details>
               </div>
             </AlertDescription>
           </Alert>

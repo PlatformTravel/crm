@@ -132,6 +132,7 @@ export function AdminSettings() {
 
   const loadSettings = async () => {
     try {
+      // Try to load from backend first
       const data = await backendService.getAdminSettings();
       if (data.success && data.settings) {
         setGlobalTarget(data.settings.globalTarget || 30);
@@ -141,17 +142,41 @@ export function AdminSettings() {
         console.log('[ADMIN] ✅ Loaded users from backend:', validUsers.length, 'users');
       }
     } catch (error: any) {
-      // Suppress database initialization errors (503)
-      const { isDatabaseInitializing } = await import('../utils/backendService');
-      if (isDatabaseInitializing(error)) {
-        // Database is still initializing, silently skip
-        setUsers([]);
-        return;
+      // Backend not available - use localStorage (offline mode)
+      console.log('[ADMIN] Backend not available, using localStorage (offline mode)');
+      
+      // Load from localStorage
+      const savedUsers = localStorage.getItem('btm_users');
+      const savedTarget = localStorage.getItem('btm_global_target');
+      
+      if (savedUsers) {
+        const parsedUsers = JSON.parse(savedUsers);
+        const validUsers = parsedUsers.filter((u: any) => u != null && u.id && u.username);
+        setUsers(validUsers);
+        console.log('[ADMIN] ✅ Loaded users from localStorage:', validUsers.length, 'users');
+      } else {
+        // Create default admin user if no users exist
+        const defaultAdmin: UserSettings = {
+          id: 'admin_default',
+          username: 'admin',
+          name: 'Administrator',
+          email: 'admin@btmtravel.net',
+          password: 'admin123',
+          role: 'admin',
+          permissions: [],
+          dailyTarget: 30,
+          createdAt: new Date().toISOString()
+        };
+        setUsers([defaultAdmin]);
+        localStorage.setItem('btm_users', JSON.stringify([defaultAdmin]));
+        console.log('[ADMIN] ✅ Created default admin user in localStorage');
       }
       
-      console.error('[ADMIN] Error loading settings:', error);
-      toast.error('Failed to load admin settings. Please check backend connection.');
-      setUsers([]);
+      if (savedTarget) {
+        setGlobalTarget(parseInt(savedTarget));
+      }
+      
+      // Don't show error toast - offline mode is expected
     }
   };
 
@@ -160,8 +185,10 @@ export function AdminSettings() {
       await backendService.setGlobalTarget(globalTarget);
       toast.success(`Global daily target set to ${globalTarget} calls (note: targets are now per-user)`);
     } catch (error: any) {
-      console.error('[ADMIN] Failed to save global target:', error);
-      toast.error('Failed to save global target. Please check backend connection.');
+      // Fallback to localStorage
+      console.log('[ADMIN] Saving target to localStorage (offline mode)');
+      localStorage.setItem('btm_global_target', globalTarget.toString());
+      toast.success(`Global daily target set to ${globalTarget} calls (saved locally)`);
     }
   };
 
@@ -225,6 +252,26 @@ export function AdminSettings() {
     );
   };
 
+  const handleSyncFromDatabase = async () => {
+    try {
+      toast.info('Syncing users from database...');
+      const response = await fetch('http://localhost:8000/debug/users');
+      const data = await response.json();
+      
+      if (data.success && data.users) {
+        // Save to localStorage
+        localStorage.setItem('btm_users', JSON.stringify(data.users));
+        setUsers(data.users);
+        toast.success(`✅ Synced ${data.users.length} users from MongoDB to localStorage!`);
+      } else {
+        toast.error('Failed to sync users: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      toast.error('Error syncing users: ' + error.message);
+      console.error('[ADMIN] Sync error:', error);
+    }
+  };
+
   const handleSavePermissions = async () => {
     if (!permissionUser) return;
 
@@ -245,8 +292,16 @@ export function AdminSettings() {
         toast.error(`Failed to update permissions: ${response.error || 'Server error'}`);
       }
     } catch (error: any) {
-      console.error('[ADMIN] Network error updating permissions:', error);
-      toast.error(error.message || 'Failed to update permissions. Please check backend connection.');
+      // Fallback to localStorage
+      console.log('[ADMIN] Updating permissions in localStorage (offline mode)');
+      const updatedUsers = users.map(u => 
+        u.id === permissionUser.id 
+          ? { ...u, permissions: selectedPermissions }
+          : u
+      );
+      setUsers(updatedUsers);
+      localStorage.setItem('btm_users', JSON.stringify(updatedUsers));
+      toast.success(`Permissions updated for ${permissionUser.name} (saved locally)`);
       setIsPermissionDialogOpen(false);
     }
   };
@@ -288,8 +343,12 @@ export function AdminSettings() {
         toast.error(response.error || 'Failed to create user');
       }
     } catch (error: any) {
-      console.error('[ADMIN] Failed to create user:', error);
-      toast.error(error.message || 'Failed to create user. Please check your connection.');
+      // Fallback to localStorage
+      console.log('[ADMIN] Saving user to localStorage (offline mode)');
+      const updatedUsers = [...users, user];
+      setUsers(updatedUsers);
+      localStorage.setItem('btm_users', JSON.stringify(updatedUsers));
+      toast.success(`User ${newUser.username} created successfully (saved locally)`);
     }
 
     setNewUser({
@@ -317,8 +376,12 @@ export function AdminSettings() {
         toast.error(response.error || 'Failed to update user');
       }
     } catch (error: any) {
-      console.error('[ADMIN] Failed to update user:', error);
-      toast.error(error.message || 'Failed to update user. Please check your connection.');
+      // Fallback to localStorage
+      console.log('[ADMIN] Updating user in localStorage (offline mode)');
+      const updatedUsers = users.map(u => u.id === editingUser.id ? editingUser : u);
+      setUsers(updatedUsers);
+      localStorage.setItem('btm_users', JSON.stringify(updatedUsers));
+      toast.success(`User ${editingUser.username} updated successfully (saved locally)`);
     }
 
     setEditingUser(null);
@@ -346,8 +409,12 @@ export function AdminSettings() {
           toast.error(response.error || 'Failed to delete user');
         }
       } catch (error: any) {
-        console.error('[ADMIN] Failed to delete user:', error);
-        toast.error(error.message || 'Failed to delete user. Please check backend connection.');
+        // Fallback to localStorage
+        console.log('[ADMIN] Deleting user from localStorage (offline mode)');
+        const updatedUsers = users.filter(u => u.id !== userId);
+        setUsers(updatedUsers);
+        localStorage.setItem('btm_users', JSON.stringify(updatedUsers));
+        toast.success(`User ${user.username} deleted successfully (removed locally)`);
       }
     }
   };
@@ -384,12 +451,21 @@ export function AdminSettings() {
         ]);
       }
     } catch (error) {
-      // Silently use defaults - the backendService already handles logging
-      setRecipients([
-        "operations@btmlimited.net",
-        "quantityassurance@btmlimited.net",
-        "clientcare@btmlimited.net"
-      ]);
+      // Backend not available - use localStorage
+      console.log('[ADMIN] Loading email recipients from localStorage (offline mode)');
+      const savedRecipients = localStorage.getItem('btm_email_recipients');
+      if (savedRecipients) {
+        setRecipients(JSON.parse(savedRecipients));
+      } else {
+        // Use defaults
+        const defaultRecipients = [
+          "operations@btmlimited.net",
+          "quantityassurance@btmlimited.net",
+          "clientcare@btmlimited.net"
+        ];
+        setRecipients(defaultRecipients);
+        localStorage.setItem('btm_email_recipients', JSON.stringify(defaultRecipients));
+      }
     } finally {
       setIsLoadingEmails(false);
     }
@@ -411,8 +487,10 @@ export function AdminSettings() {
         toast.error(data.error || "Failed to update recipients");
       }
     } catch (error) {
-      console.error('[EMAIL RECIPIENTS] Failed to save:', error);
-      toast.error("Network error: Unable to save email recipients. Please check your connection and try again.");
+      // Fallback to localStorage
+      console.log('[EMAIL RECIPIENTS] Saving to localStorage (offline mode)');
+      localStorage.setItem('btm_email_recipients', JSON.stringify(recipients));
+      toast.success("Email recipients saved locally!");
     } finally {
       setIsSavingEmails(false);
     }
@@ -786,17 +864,14 @@ export function AdminSettings() {
       setPromotions(data.promotions || []);
       console.log('[ADMIN] Loaded promotions:', data.promotions?.length || 0);
     } catch (error: any) {
-      // Suppress database initialization errors (503)
-      const { isDatabaseInitializing } = await import('../utils/backendService');
-      if (isDatabaseInitializing(error)) {
-        // Database is still initializing, silently skip
+      // Backend not available - use localStorage
+      console.log('[ADMIN] Loading promotions from localStorage (offline mode)');
+      const savedPromotions = localStorage.getItem('btm_promotions');
+      if (savedPromotions) {
+        setPromotions(JSON.parse(savedPromotions));
+      } else {
         setPromotions([]);
-        return;
       }
-      
-      console.error('[ADMIN] Failed to fetch promotions:', error);
-      // Set empty array on error
-      setPromotions([]);
     }
   };
 
@@ -851,8 +926,30 @@ export function AdminSettings() {
         toast.error(errorData.error || "Failed to create promotion");
       }
     } catch (error) {
-      console.error('[ADMIN] Failed to create promotion:', error);
-      toast.error("Failed to create promotion");
+      // Fallback to localStorage
+      console.log('[ADMIN] Saving promotion to localStorage (offline mode)');
+      const newPromoWithId = { ...promoData, id: Date.now().toString(), createdAt: new Date().toISOString() };
+      const updatedPromotions = [...promotions, newPromoWithId];
+      setPromotions(updatedPromotions);
+      localStorage.setItem('btm_promotions', JSON.stringify(updatedPromotions));
+      toast.success("Promotion created successfully (saved locally)!");
+      setIsAddPromoDialogOpen(false);
+      setNewPromo({
+        name: "",
+        code: "",
+        discount: "",
+        website: "adventure.btmtravel.net",
+        status: "active",
+        startDate: "",
+        endDate: "",
+        target: "",
+        usage: "0",
+        revenue: "0",
+        views: "0",
+        conversions: "0",
+        targetCustomerTypes: [],
+        targetFlights: []
+      });
     }
   };
 
@@ -1076,13 +1173,22 @@ export function AdminSettings() {
                         Create and manage users with different roles, permissions, and call targets
                       </CardDescription>
                     </div>
-                    <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-br from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/20">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add User
-                        </Button>
-                      </DialogTrigger>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={handleSyncFromDatabase}
+                        className="gap-2"
+                      >
+                        <Database className="w-4 h-4" />
+                        Sync from Database
+                      </Button>
+                      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="bg-gradient-to-br from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/20">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add User
+                          </Button>
+                        </DialogTrigger>
                       <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
@@ -1202,9 +1308,17 @@ export function AdminSettings() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <AlertCircle className="w-4 h-4" />
+            <AlertDescription className="text-sm text-blue-900">
+              <strong>💡 Tip:</strong> If users from MongoDB (System Users) don't appear here, click <strong>"Sync from Database"</strong> to sync them to localStorage.
+            </AlertDescription>
+          </Alert>
+          
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
@@ -1308,6 +1422,18 @@ export function AdminSettings() {
                                     onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                                     className="bg-white/60 backdrop-blur-xl border-white/20"
                                   />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>New Password (leave empty to keep current)</Label>
+                                  <Input
+                                    type="password"
+                                    placeholder="Enter new password or leave empty"
+                                    value={editingUser.password || ""}
+                                    onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                                    className="bg-white/60 backdrop-blur-xl border-white/20"
+                                  />
+                                  <p className="text-sm text-muted-foreground">Only fill this if you want to change the password</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

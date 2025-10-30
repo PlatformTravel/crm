@@ -71,7 +71,7 @@ async function backendFetch(endpoint: string, options: RequestInit = {}, customT
     
     // Network errors (server not running)
     if (error.message?.includes('fetch failed') || error.message?.includes('Failed to fetch')) {
-      throw new Error(`Cannot connect to backend server at ${BACKEND_URL}.\n\nThe server is not running. Please start it:\n\ncd backend\ndeno run --allow-net --allow-env server.tsx`);
+      throw new Error(`Cannot connect to backend server at ${BACKEND_URL}.\n\n🚨 BACKEND SERVER NOT RUNNING!\n\nQuick Fix:\n\n1. Open terminal/command prompt\n2. Run: cd backend\n3. Run: deno run --allow-all server.tsx\n\nOR double-click: START-BACKEND-SERVER.bat (Windows) or START-BACKEND-SERVER.sh (Mac/Linux)\n\n✅ Once you see "SERVER - FULLY OPERATIONAL", refresh this page!`);
     }
     
     // Silently throw error (handled by calling component)

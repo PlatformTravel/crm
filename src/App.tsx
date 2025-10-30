@@ -161,6 +161,16 @@ function AppContent() {
 
                 {/* User Menu */}
                 <div className="flex items-center gap-2 sm:gap-4">
+                  {/* Offline Mode Indicator */}
+                  {backendConnected === false && (
+                    <div className="bg-amber-500/90 backdrop-blur-xl rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-2 border border-amber-300/30 animate-pulse">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                        <span className="text-white text-xs sm:text-sm font-medium">Offline Mode</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="bg-white/10 backdrop-blur-xl rounded-lg sm:rounded-xl px-2 sm:px-4 py-2 sm:py-3 border border-white/20">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />

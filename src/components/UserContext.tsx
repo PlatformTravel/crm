@@ -80,25 +80,38 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [lastResetDate]);
 
   useEffect(() => {
+    // MIGRATION: Check for old 'users' key and migrate to 'btm_users'
+    const oldUsersData = localStorage.getItem('users');
+    const newUsersData = localStorage.getItem('btm_users');
+    
+    if (oldUsersData && !newUsersData) {
+      try {
+        const parsed = JSON.parse(oldUsersData);
+        const oldUsers = parsed.users || parsed; // Handle both {users: [...]} and [...] formats
+        localStorage.setItem('btm_users', JSON.stringify(oldUsers));
+        console.log('[USER CONTEXT] 📦 Migrated users from old "users" key to "btm_users"');
+      } catch (e) {
+        console.error('[USER CONTEXT] Failed to migrate old users:', e);
+      }
+    }
+    
     // Ensure default admin user exists in localStorage (fallback when MongoDB is unavailable)
-    const usersData = localStorage.getItem('users');
+    const usersData = localStorage.getItem('btm_users');
     if (!usersData) {
-      const defaultUsers = {
-        users: [
-          {
-            id: 'admin-fallback',
-            username: 'admin',
-            password: 'admin123',
-            name: 'Administrator',
-            email: 'admin@btmtravel.net',
-            role: 'admin',
-            permissions: [],
-            dailyTarget: 30,
-            createdAt: new Date().toISOString()
-          }
-        ]
-      };
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
+      const defaultUsers = [
+        {
+          id: 'admin-fallback',
+          username: 'admin',
+          password: 'admin123',
+          name: 'Administrator',
+          email: 'admin@btmtravel.net',
+          role: 'admin',
+          permissions: [],
+          dailyTarget: 30,
+          createdAt: new Date().toISOString()
+        }
+      ];
+      localStorage.setItem('btm_users', JSON.stringify(defaultUsers));
       console.log('[USER CONTEXT] ✅ Created fallback admin user in localStorage');
     }
     
@@ -208,23 +221,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       // Continue to localStorage/demo users if backend is unavailable
     }
     
-    // SECOND: Check users from localStorage (legacy support)
+    // SECOND: Check users from localStorage (btm_users key - matches AdminSettings)
     try {
-      const usersData = localStorage.getItem('users');
+      const usersData = localStorage.getItem('btm_users');
       if (usersData) {
-        const parsed = JSON.parse(usersData);
-        const users = parsed.users || [];
-        console.log('[LOGIN] Checking against', users.length, 'users from localStorage');
+        const users = JSON.parse(usersData); // Direct array, not object with users property
+        console.log('[LOGIN] Checking against', users.length, 'users from localStorage (btm_users)');
         
         const user = users.find((u: any) => 
-          u.username.toLowerCase() === username.toLowerCase()
+          u && u.username && u.username.toLowerCase() === username.toLowerCase()
         );
         
         if (user) {
           console.log('[LOGIN] Found user in localStorage:', user.username);
           // Check password (stored in localStorage with user data)
           if (user.password === password) {
-            console.log('[LOGIN] Password match - logging in');
+            console.log('[LOGIN] ✅ Password match - logging in from localStorage');
             setCurrentUser(user);
             localStorage.setItem('btm_current_user', JSON.stringify(user));
             
@@ -248,7 +260,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             
             return true;
           } else {
-            console.log('[LOGIN] Password mismatch for user:', user.username);
+            console.log('[LOGIN] ❌ Password mismatch for user:', user.username);
           }
         }
       }

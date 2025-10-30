@@ -1564,11 +1564,28 @@ export function CustomerService() {
     }
   };
 
+  // Calculate statistics for customers
+  const totalCustomers = customers.length;
   const activeCustomers = customers.filter(c => c.status === "active" || c.status === "vip").length;
   const vipCustomers = customers.filter(c => c.status === "vip").length;
   const totalRevenue = customers.reduce((sum, c) => 
     sum + c.purchaseHistory.reduce((pSum, p) => pSum + p.amount, 0), 0
   );
+  
+  // Calculate completion statistics (for tracking customer interactions)
+  const completedInteractions = customers.filter(c => c.notes && c.notes.length > 0).length;
+  const pendingInteractions = customers.filter(c => !c.notes || c.notes.length === 0).length;
+  
+  // Debug logging for statistics
+  useEffect(() => {
+    console.log('[CUSTOMER SERVICE] Statistics update:', {
+      totalCustomers,
+      completedInteractions,
+      pendingInteractions,
+      customers: customers.length,
+      currentUser: currentUser?.name
+    });
+  }, [totalCustomers, completedInteractions, pendingInteractions, customers.length, currentUser?.name]);
 
   return (
     <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-3xl">
@@ -2031,31 +2048,77 @@ export function CustomerService() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white rounded-2xl px-6 py-5 shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 transition-all hover:scale-105 transform group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-blue-100 uppercase tracking-wide font-semibold">Active Customers</div>
-            <User className="w-5 h-5 text-blue-200 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-4xl font-bold">{activeCustomers}</div>
-          <div className="text-xs text-blue-200 mt-1">Currently active</div>
-        </div>
-        <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 text-white rounded-2xl px-6 py-5 shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 transition-all hover:scale-105 transform group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-amber-100 uppercase tracking-wide font-semibold">VIP Clients</div>
-            <span className="text-2xl group-hover:scale-110 transition-transform">⭐</span>
-          </div>
-          <div className="text-4xl font-bold">{vipCustomers}</div>
-          <div className="text-xs text-amber-200 mt-1">Premium tier</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl px-6 py-5 shadow-2xl shadow-green-500/40 hover:shadow-green-500/60 transition-all hover:scale-105 transform group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-green-100 uppercase tracking-wide font-semibold">Total Revenue</div>
-            <span className="text-2xl group-hover:scale-110 transition-transform">💰</span>
-          </div>
-          <div className="text-4xl font-bold">${(totalRevenue / 1000).toFixed(0)}k</div>
-          <div className="text-xs text-green-200 mt-1">Lifetime value</div>
-        </div>
+      {/* Main Statistics - Matching ClientCRM Style */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-white via-purple-50/30 to-white backdrop-blur-xl border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 mb-1 font-medium">Total</p>
+                <div className="text-3xl font-bold text-purple-600">
+                  {totalCustomers}
+                </div>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg shadow-purple-500/30">
+                <HeadphonesIcon className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-white via-orange-50/30 to-white backdrop-blur-xl border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 mb-1 font-medium">Pending</p>
+                <div className="text-3xl font-bold text-orange-600">
+                  {pendingInteractions}
+                </div>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl shadow-lg shadow-orange-500/30">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-white via-green-50/30 to-white backdrop-blur-xl border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 mb-1 font-medium">Completed</p>
+                <div className="text-3xl font-bold text-green-600">
+                  {completedInteractions}
+                </div>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg shadow-green-500/30">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 backdrop-blur-xl border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white/90 mb-1">Progress</p>
+                <div className="text-3xl font-bold">
+                  {totalCustomers > 0 ? Math.round((completedInteractions / totalCustomers) * 100) : 0}%
+                </div>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="mt-3 bg-white/20 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-white h-full rounded-full transition-all duration-500"
+                style={{ width: `${totalCustomers > 0 ? Math.min((completedInteractions / totalCustomers) * 100, 100) : 0}%` }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="relative">

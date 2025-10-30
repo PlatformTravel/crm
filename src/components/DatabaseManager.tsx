@@ -1,10 +1,11 @@
-// Database Manager Component
+// Database Manager Component - Redesigned with Beautiful Gradients
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Progress } from "./ui/progress";
 import { 
   Database, 
   RefreshCw, 
@@ -14,7 +15,10 @@ import {
   AlertCircle,
   FileText,
   Users,
-  UserCheck
+  UserCheck,
+  Sparkles,
+  TrendingUp,
+  Package
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { backendService } from "../utils/backendService";
@@ -38,6 +42,7 @@ export function DatabaseManager() {
     availableCustomers: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isImportClientsOpen, setIsImportClientsOpen] = useState(false);
   const [isImportCustomersOpen, setIsImportCustomersOpen] = useState(false);
   const clientFileInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +79,6 @@ export function DatabaseManager() {
         availableCustomers: totalCustomers - assignedCustomers
       });
     } catch (error: any) {
-      // Check if it's a database initialization error
       if (error.message?.includes('503') && 
           (error.message?.includes('not_initialized') || error.message?.includes('Database not ready'))) {
         console.log('Database is initializing, will retry automatically...');
@@ -85,7 +89,13 @@ export function DatabaseManager() {
       }
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadDatabaseStats();
   };
 
   const handleImportClients = () => {
@@ -105,13 +115,11 @@ export function DatabaseManager() {
       const text = e.target?.result as string;
       const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
       
-      // Skip header row
       const dataRows = rows.slice(1).filter(row => row.length >= 3 && row[0]);
       
       let successCount = 0;
       let errorCount = 0;
 
-      // Batch import all clients
       const clients = [];
       
       for (const row of dataRows) {
@@ -132,7 +140,6 @@ export function DatabaseManager() {
         }
       }
 
-      // Import all clients in one call
       try {
         const data = await backendService.importClients(clients);
         if (data.success) {
@@ -146,7 +153,7 @@ export function DatabaseManager() {
 
       if (successCount > 0) {
         toast.success(`Successfully imported ${successCount} client${successCount > 1 ? 's' : ''}!`);
-        await loadDatabaseStats(); // Refresh stats
+        await loadDatabaseStats();
       }
       if (errorCount > 0) {
         toast.warning(`${errorCount} client${errorCount > 1 ? 's' : ''} could not be imported.`);
@@ -170,24 +177,20 @@ export function DatabaseManager() {
       const text = e.target?.result as string;
       const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
       
-      // Skip header row
       const dataRows = rows.slice(1).filter(row => row.length >= 3 && row[0]);
       
       let successCount = 0;
       let errorCount = 0;
 
-      // Batch import all customers
       const customers = [];
       
       for (const row of dataRows) {
         try {
           const [name, email, phone, business, status, lastContact, totalPurchases, totalRevenue, notes] = row;
           
-          // Validate business type
           const validBusinessTypes = ["Online Sales", "Corporate", "Channel", "Retails", "Protocol", "Others"];
           const customerBusiness = validBusinessTypes.includes(business) ? business : "Others";
           
-          // Validate status
           const validStatuses = ["active", "inactive", "vip", "corporate"];
           const customerStatus = validStatuses.includes(status) ? status : "active";
           
@@ -206,7 +209,6 @@ export function DatabaseManager() {
         }
       }
 
-      // Import all customers in one call
       try {
         const data = await backendService.importCustomers(customers);
         if (data.success) {
@@ -221,7 +223,7 @@ export function DatabaseManager() {
 
       if (successCount > 0) {
         toast.success(`Successfully imported ${successCount} customer${successCount > 1 ? 's' : ''}!`);
-        await loadDatabaseStats(); // Refresh stats
+        await loadDatabaseStats();
       }
       if (errorCount > 0) {
         toast.warning(`${errorCount} customer${errorCount > 1 ? 's' : ''} could not be imported.`);
@@ -323,7 +325,7 @@ export function DatabaseManager() {
       
       if (data.success) {
         toast.success(data.message || "Customer records migrated successfully!");
-        await loadDatabaseStats(); // Refresh stats
+        await loadDatabaseStats();
       } else {
         throw new Error('Migration failed');
       }
@@ -375,59 +377,195 @@ export function DatabaseManager() {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="flex items-center gap-2">
-            <Database className="w-6 h-6 text-blue-600" />
-            Database Management
-          </h2>
-          <p className="text-gray-600 mt-1">Manage clients and customers database</p>
+  const utilizationRate = stats.totalClients + stats.totalCustomers > 0 
+    ? Math.round(((stats.assignedClients + stats.assignedCustomers) / (stats.totalClients + stats.totalCustomers)) * 100)
+    : 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="h-16 w-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+            <div className="absolute inset-0 h-16 w-16 rounded-full bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-xl"></div>
+          </div>
+          <p className="text-muted-foreground animate-pulse">Loading database...</p>
         </div>
-        <Button onClick={loadDatabaseStats} variant="outline" disabled={isLoading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 p-6 animate-in fade-in duration-500">
+      {/* Header with Gradient */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-2xl shadow-purple-500/30">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg">
+              <Database className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-white mb-1">Database Management</h1>
+              <p className="text-white/90 text-sm">
+                Centralized client and customer database
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={handleRefresh} 
+            disabled={refreshing} 
+            className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm shadow-lg transition-all duration-300 hover:scale-105"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Database Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
+      {/* Summary Stats Cards with Glassmorphism */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-blue-500/10">
+                    <Database className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <span className="text-sm text-blue-700">Total Records</span>
+                </div>
+                <div className="text-2xl text-blue-900 mb-1">{stats.totalClients + stats.totalCustomers}</div>
+                <p className="text-xs text-blue-600/70">
+                  Combined database
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-green-500/10">
+                    <Sparkles className="h-4 w-4 text-green-600" />
+                  </div>
+                  <span className="text-sm text-green-700">Available</span>
+                </div>
+                <div className="text-2xl text-green-900 mb-1">{stats.availableClients + stats.availableCustomers}</div>
+                <p className="text-xs text-green-600/70">
+                  Ready to assign
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-amber-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-orange-500/10">
+                    <Users className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm text-orange-700">Assigned</span>
+                </div>
+                <div className="text-2xl text-orange-900 mb-1">{stats.assignedClients + stats.assignedCustomers}</div>
+                <p className="text-xs text-orange-600/70">
+                  To agents
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-purple-500/10">
+                    <TrendingUp className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-sm text-purple-700">Utilization</span>
+                </div>
+                <div className="text-2xl text-purple-900 mb-1">{utilizationRate}%</div>
+                <p className="text-xs text-purple-600/70">
+                  Assignment rate
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Database Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Clients Database Card */}
+        <Card className="border-0 bg-white/60 backdrop-blur-xl shadow-xl group hover:shadow-2xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/5 to-transparent rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-500"></div>
+          <CardHeader className="border-b border-border/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
             <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
               Prospective Clients Database
             </CardTitle>
             <CardDescription>Client records and availability</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalClients}</p>
-                <p className="text-sm text-gray-600">Total</p>
+          <CardContent className="pt-6 space-y-4 relative">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-100/50">
+                <p className="text-2xl text-blue-600">{stats.totalClients}</p>
+                <p className="text-sm text-blue-600/70 mt-1">Total</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-green-600">{stats.availableClients}</p>
-                <p className="text-sm text-gray-600">Available</p>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50/80 to-emerald-50/80 backdrop-blur-sm border border-green-100/50">
+                <p className="text-2xl text-green-600">{stats.availableClients}</p>
+                <p className="text-sm text-green-600/70 mt-1">Available</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-orange-600">{stats.assignedClients}</p>
-                <p className="text-sm text-gray-600">Assigned</p>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-orange-50/80 to-amber-50/80 backdrop-blur-sm border border-orange-100/50">
+                <p className="text-2xl text-orange-600">{stats.assignedClients}</p>
+                <p className="text-sm text-orange-600/70 mt-1">Assigned</p>
               </div>
             </div>
 
+            {/* Progress Bar */}
+            {stats.totalClients > 0 && (
+              <div className="p-4 rounded-xl bg-white/60 backdrop-blur-sm border border-blue-100/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex items-center gap-2 text-sm text-blue-700">
+                    <Package className="h-4 w-4" />
+                    Assignment Progress
+                  </span>
+                  <span className="text-blue-700">{Math.round((stats.assignedClients / stats.totalClients) * 100)}%</span>
+                </div>
+                <Progress 
+                  value={(stats.assignedClients / stats.totalClients) * 100} 
+                  className="h-2 bg-blue-100"
+                />
+              </div>
+            )}
+
+            {/* Alerts */}
             {stats.availableClients === 0 && stats.totalClients > 0 && (
-              <Alert className="border-orange-200 bg-orange-50">
+              <Alert className="border-0 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md">
                 <AlertCircle className="w-4 h-4 text-orange-600" />
                 <AlertDescription className="text-orange-700">
-                  All clients have been assigned. Import more clients to continue operations.
+                  All clients assigned. Import more to continue operations.
                 </AlertDescription>
               </Alert>
             )}
 
             {stats.totalClients === 0 && (
-              <Alert className="border-blue-200 bg-blue-50">
+              <Alert className="border-0 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md">
                 <AlertCircle className="w-4 h-4 text-blue-600" />
                 <AlertDescription className="text-blue-700">
                   No clients in database. Upload CSV file to import clients.
@@ -435,12 +573,21 @@ export function DatabaseManager() {
               </Alert>
             )}
 
-            <div className="flex gap-2">
-              <Button onClick={handleImportClients} className="flex-1" variant="outline">
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleImportClients} 
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg transition-all duration-300 hover:scale-105"
+              >
                 <Upload className="w-4 h-4 mr-2" />
                 Import Clients
               </Button>
-              <Button onClick={handleExportClients} variant="outline" disabled={stats.totalClients === 0}>
+              <Button 
+                onClick={handleExportClients} 
+                variant="outline" 
+                disabled={stats.totalClients === 0}
+                className="border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
@@ -448,41 +595,64 @@ export function DatabaseManager() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        {/* Customers Database Card */}
+        <Card className="border-0 bg-white/60 backdrop-blur-xl shadow-xl group hover:shadow-2xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-500/5 to-transparent rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-500"></div>
+          <CardHeader className="border-b border-border/50 bg-gradient-to-r from-green-50/50 to-emerald-50/50">
             <CardTitle className="flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <UserCheck className="h-5 w-5 text-green-600" />
+              </div>
               Existing Customers Database
             </CardTitle>
             <CardDescription>Customer records and availability</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-green-600">{stats.totalCustomers}</p>
-                <p className="text-sm text-gray-600">Total</p>
+          <CardContent className="pt-6 space-y-4 relative">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50/80 to-emerald-50/80 backdrop-blur-sm border border-green-100/50">
+                <p className="text-2xl text-green-600">{stats.totalCustomers}</p>
+                <p className="text-sm text-green-600/70 mt-1">Total</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{stats.availableCustomers}</p>
-                <p className="text-sm text-gray-600">Available</p>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-100/50">
+                <p className="text-2xl text-blue-600">{stats.availableCustomers}</p>
+                <p className="text-sm text-blue-600/70 mt-1">Available</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-purple-600">{stats.assignedCustomers}</p>
-                <p className="text-sm text-gray-600">Assigned</p>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-purple-50/80 to-pink-50/80 backdrop-blur-sm border border-purple-100/50">
+                <p className="text-2xl text-purple-600">{stats.assignedCustomers}</p>
+                <p className="text-sm text-purple-600/70 mt-1">Assigned</p>
               </div>
             </div>
 
+            {/* Progress Bar */}
+            {stats.totalCustomers > 0 && (
+              <div className="p-4 rounded-xl bg-white/60 backdrop-blur-sm border border-green-100/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex items-center gap-2 text-sm text-green-700">
+                    <Package className="h-4 w-4" />
+                    Assignment Progress
+                  </span>
+                  <span className="text-green-700">{Math.round((stats.assignedCustomers / stats.totalCustomers) * 100)}%</span>
+                </div>
+                <Progress 
+                  value={(stats.assignedCustomers / stats.totalCustomers) * 100} 
+                  className="h-2 bg-green-100"
+                />
+              </div>
+            )}
+
+            {/* Alerts */}
             {stats.availableCustomers === 0 && stats.totalCustomers > 0 && (
-              <Alert className="border-orange-200 bg-orange-50">
+              <Alert className="border-0 bg-gradient-to-r from-orange-50 to-amber-50 shadow-md">
                 <AlertCircle className="w-4 h-4 text-orange-600" />
                 <AlertDescription className="text-orange-700">
-                  All customers have been assigned. Import more customers to continue operations.
+                  All customers assigned. Import more to continue operations.
                 </AlertDescription>
               </Alert>
             )}
 
             {stats.totalCustomers === 0 && (
-              <Alert className="border-green-200 bg-green-50">
+              <Alert className="border-0 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md">
                 <AlertCircle className="w-4 h-4 text-green-600" />
                 <AlertDescription className="text-green-700">
                   No customers in database. Upload CSV file to import customers.
@@ -490,19 +660,33 @@ export function DatabaseManager() {
               </Alert>
             )}
 
-            <div className="flex gap-2">
-              <Button onClick={handleImportCustomers} className="flex-1" variant="outline">
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleImportCustomers} 
+                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg transition-all duration-300 hover:scale-105"
+              >
                 <Upload className="w-4 h-4 mr-2" />
                 Import Customers
               </Button>
-              <Button onClick={handleExportCustomers} variant="outline" disabled={stats.totalCustomers === 0}>
+              <Button 
+                onClick={handleExportCustomers} 
+                variant="outline" 
+                disabled={stats.totalCustomers === 0}
+                className="border-green-200 hover:bg-green-50 hover:border-green-300 transition-all duration-300"
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
             </div>
-            
+
+            {/* Migration Button */}
             {stats.totalCustomers > 0 && stats.availableCustomers === 0 && (
-              <Button onClick={handleMigrateCustomers} variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-50">
+              <Button 
+                onClick={handleMigrateCustomers} 
+                variant="outline" 
+                className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all duration-300"
+              >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Fix Customer Records (Migration)
               </Button>
@@ -511,48 +695,14 @@ export function DatabaseManager() {
         </Card>
       </div>
 
-      {/* Quick Stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Database Overview</CardTitle>
-          <CardDescription>Complete database statistics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <Database className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-              <p className="text-2xl font-bold text-blue-600">{stats.totalClients + stats.totalCustomers}</p>
-              <p className="text-sm text-gray-600">Total Records</p>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <FileText className="w-6 h-6 mx-auto mb-2 text-green-600" />
-              <p className="text-2xl font-bold text-green-600">{stats.availableClients + stats.availableCustomers}</p>
-              <p className="text-sm text-gray-600">Available</p>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <Users className="w-6 h-6 mx-auto mb-2 text-orange-600" />
-              <p className="text-2xl font-bold text-orange-600">{stats.assignedClients + stats.assignedCustomers}</p>
-              <p className="text-sm text-gray-600">Assigned</p>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <UserCheck className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-              <p className="text-2xl font-bold text-purple-600">
-                {stats.totalClients + stats.totalCustomers > 0 
-                  ? Math.round(((stats.assignedClients + stats.assignedCustomers) / (stats.totalClients + stats.totalCustomers)) * 100)
-                  : 0}%
-              </p>
-              <p className="text-sm text-gray-600">Utilization</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Import Clients Dialog */}
       <Dialog open={isImportClientsOpen} onOpenChange={setIsImportClientsOpen}>
-        <DialogContent>
+        <DialogContent className="bg-white/95 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-indigo-500/10">
+                <Upload className="w-5 h-5 text-blue-600" />
+              </div>
               Import Clients from CSV
             </DialogTitle>
             <DialogDescription>
@@ -561,18 +711,18 @@ export function DatabaseManager() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <Alert className="border-blue-200 bg-blue-50">
+            <Alert className="border-0 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md">
               <AlertCircle className="w-4 h-4 text-blue-600" />
               <AlertDescription className="text-blue-700">
                 <strong>CSV Format:</strong> Name, Phone, Company, Status, Last Contact, Notes, Email
               </AlertDescription>
             </Alert>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Button 
                 onClick={handleDownloadClientTemplate}
                 variant="outline" 
-                className="w-full"
+                className="w-full border-blue-200 hover:bg-blue-50 hover:border-blue-300"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download Template CSV
@@ -588,7 +738,7 @@ export function DatabaseManager() {
               
               <Button 
                 onClick={() => clientFileInputRef.current?.click()}
-                className="w-full bg-gradient-to-br from-blue-600 to-blue-700"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg transition-all duration-300"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Select CSV File to Import
@@ -606,10 +756,12 @@ export function DatabaseManager() {
 
       {/* Import Customers Dialog */}
       <Dialog open={isImportCustomersOpen} onOpenChange={setIsImportCustomersOpen}>
-        <DialogContent>
+        <DialogContent className="bg-white/95 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+                <Upload className="w-5 h-5 text-green-600" />
+              </div>
               Import Customers from CSV
             </DialogTitle>
             <DialogDescription>
@@ -618,18 +770,18 @@ export function DatabaseManager() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <Alert className="border-green-200 bg-green-50">
+            <Alert className="border-0 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md">
               <AlertCircle className="w-4 h-4 text-green-600" />
               <AlertDescription className="text-green-700">
                 <strong>CSV Format:</strong> Name, Email, Phone, Business, Status, Last Contact, Total Purchases, Total Revenue, Notes
               </AlertDescription>
             </Alert>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Button 
                 onClick={handleDownloadCustomerTemplate}
                 variant="outline" 
-                className="w-full"
+                className="w-full border-green-200 hover:bg-green-50 hover:border-green-300"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download Template CSV
@@ -645,7 +797,7 @@ export function DatabaseManager() {
               
               <Button 
                 onClick={() => customerFileInputRef.current?.click()}
-                className="w-full bg-gradient-to-br from-green-600 to-green-700"
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg transition-all duration-300"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Select CSV File to Import

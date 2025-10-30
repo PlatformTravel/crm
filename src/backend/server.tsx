@@ -1383,12 +1383,15 @@ Deno.serve(async (req) => {
           
           // Get customer service assignments
           const totalCustomerAssignments = await customersCollection.countDocuments({ 
-            assignedAgent: agent.id 
+            assignedTo: agent.id 
           });
-          const completedCustomerAssignments = await customersCollection.countDocuments({ 
-            assignedAgent: agent.id,
-            status: 'completed'
-          });
+          // Count customers with notes as "completed" interactions
+          const customersWithNotes = await customersCollection.find({ 
+            assignedTo: agent.id
+          }).toArray();
+          const completedCustomerAssignments = customersWithNotes.filter(c => 
+            c.notes && c.notes.length > 0
+          ).length;
           
           // Calculate totals
           const overallTotal = totalCRMAssignments + totalCustomerAssignments;
