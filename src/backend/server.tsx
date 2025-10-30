@@ -3431,7 +3431,7 @@ Deno.serve(async (req) => {
       
       const collection = await getCollection(Collections.CUSTOMERS_DATABASE);
       
-      // Add interaction to customer's interactions array
+      // Add interaction to customer's interactions array AND mark as completed
       await collection.updateOne(
         { id: customerId },
         { 
@@ -3440,6 +3440,9 @@ Deno.serve(async (req) => {
               ...interaction,
               timestamp: new Date().toISOString()
             }
+          },
+          $set: {
+            interactionCompleted: true // Mark customer interaction as complete
           }
         }
       );

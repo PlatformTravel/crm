@@ -51,6 +51,7 @@ interface Customer {
   customerType?: 'Retails' | 'Corporate' | 'Channel';
   flightInfo?: string;
   createdAt?: string;
+  interactionCompleted?: boolean; // Track if agent has completed working with this customer
 }
 
 
@@ -252,7 +253,8 @@ export function CustomerService() {
               packageType: record.packageType || '',
               customerType: record.customerType || undefined,
               flightInfo: record.flightInfo || '',
-              createdAt: record.createdAt || new Date().toISOString()
+              createdAt: record.createdAt || new Date().toISOString(),
+              interactionCompleted: record.interactionCompleted || false // Preserve completion status
             }));
             
             const uniqueCustomers = ensureUniqueIds(transformedCustomers);
@@ -670,7 +672,8 @@ export function CustomerService() {
           ? {
               ...c,
               notes: updatedNote,
-              lastContact: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              lastContact: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              interactionCompleted: true // Mark this customer's interaction as complete
             }
           : c
       );
@@ -1574,8 +1577,9 @@ export function CustomerService() {
   );
   
   // Calculate completion statistics (for tracking customer interactions)
-  const completedInteractions = customers.filter(c => c.notes && c.notes.length > 0).length;
-  const pendingInteractions = customers.filter(c => !c.notes || c.notes.length === 0).length;
+  // Use interactionCompleted flag to determine if agent has finished working with customer
+  const completedInteractions = customers.filter(c => c.interactionCompleted === true).length;
+  const pendingInteractions = customers.filter(c => c.interactionCompleted !== true).length;
   
   // Debug logging for statistics
   useEffect(() => {

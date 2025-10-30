@@ -1,0 +1,70 @@
+
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║              ⚠️  BACKEND SERVER IS NOT RUNNING  ⚠️             ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+YOUR ERROR:
+----------
+"Backend server not responding. Please make sure it's running"
+
+
+THE FIX (Super Simple):
+----------------------
+
+WINDOWS USERS:
+  👉 Double-click this file: CHECK-AND-START-SERVER.bat
+
+MAC/LINUX USERS:
+  👉 Open Terminal and run:
+     chmod +x CHECK-AND-START-SERVER.sh
+     ./CHECK-AND-START-SERVER.sh
+
+
+THAT'S IT! The script will:
+---------------------------
+✅ Check if the server is running
+✅ Start it automatically if not
+✅ Show you helpful error messages if something goes wrong
+
+
+WHAT YOU'LL SEE WHEN IT WORKS:
+-------------------------------
+You'll see a green message saying:
+
+  🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅
+
+
+IMPORTANT:
+----------
+⚠️  Keep the terminal/command window OPEN
+⚠️  Don't close it - that stops the server
+⚠️  Wait 10-30 seconds for MongoDB to connect
+⚠️  Then refresh your browser
+
+
+QUICK TEST:
+-----------
+Once started, visit this in your browser:
+http://localhost:8000/health
+
+You should see: {"status": "ok", "message": "..."}
+
+
+═══════════════════════════════════════════════════════════════
+
+NO DENO INSTALLED?
+------------------
+If you get "deno: command not found", install it first:
+
+Windows (PowerShell):
+  irm https://deno.land/install.ps1 | iex
+
+Mac/Linux:
+  curl -fsSL https://deno.land/install.sh | sh
+
+Then restart the script!
+
+═══════════════════════════════════════════════════════════════
+
