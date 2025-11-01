@@ -127,9 +127,15 @@ export function AdminSettings() {
   });
 
   useEffect(() => {
-    loadSettings();
-    fetchRecipients();
-    fetchPromotions();
+    // GRACE PERIOD: Wait 3 seconds before checking backend to prevent instant errors
+    // This gives the backend time to start and prevents jarring error messages on page load
+    const gracePeriodTimeout = setTimeout(() => {
+      loadSettings();
+      fetchRecipients();
+      fetchPromotions();
+    }, 3000);
+
+    return () => clearTimeout(gracePeriodTimeout);
   }, []);
 
   const loadSettings = async () => {
@@ -147,8 +153,9 @@ export function AdminSettings() {
     } catch (error: any) {
       // Backend not available - show error
       setBackendAvailable(false);
-      console.error('[ADMIN] ❌ Backend not available - user management requires MongoDB connection');
-      toast.error('⚠️ Backend not available! Click the "Start Backend" button below.');
+      console.warn('[ADMIN] ⚠️ Backend not available - user management requires MongoDB connection');
+      // Toast suppressed on first load (grace period handles user notification via modal)
+      // toast.error('⚠️ Backend not available! Click the "Start Backend" button below.');
       setUsers([]);
     }
   };

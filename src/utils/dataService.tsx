@@ -64,10 +64,63 @@ export const dataService = {
       console.log('[DataService] ✅ Login via MongoDB:', response.success ? 'Success' : 'Failed');
       return response;
     } catch (error: any) {
-      console.error('[DataService] ❌ MongoDB backend not available for login');
+      // Silent fallback - backend unavailable is expected in offline scenarios
+      // The UI will handle showing appropriate error messages to the user
+      console.log('[DataService] ℹ️ Backend unavailable, checking localStorage fallback...');
+      
+      // Try localStorage fallback for offline login
+      try {
+        const usersData = localStorage.getItem('btm_users');
+        if (usersData) {
+          const users = JSON.parse(usersData);
+          const user = users.find((u: any) => 
+            u && u.username && u.username.toLowerCase() === username.toLowerCase()
+          );
+          
+          if (user && user.password === password) {
+            console.log('[DataService] ✅ Login via localStorage (offline mode)');
+            
+            // Log audit trail
+            try {
+              const auditLogs = JSON.parse(localStorage.getItem('loginAuditLogs') || '[]');
+              auditLogs.push({
+                id: Date.now().toString(),
+                userId: user.id,
+                username: user.username,
+                name: user.name,
+                role: user.role,
+                timestamp: new Date().toISOString(),
+                success: true,
+                ipAddress: 'N/A',
+                source: 'localStorage'
+              });
+              localStorage.setItem('loginAuditLogs', JSON.stringify(auditLogs));
+            } catch (e) {
+              // Silent - audit logging failure shouldn't block login
+            }
+            
+            return {
+              success: true,
+              user: {
+                id: user.id,
+                username: user.username,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                permissions: user.permissions || [],
+                dailyTarget: user.dailyTarget,
+                createdAt: user.createdAt
+              }
+            };
+          }
+        }
+      } catch (localStorageError) {
+        console.log('[DataService] localStorage fallback also failed');
+      }
+      
       return {
         success: false,
-        error: 'Backend not available. Please ensure MongoDB server is running.',
+        error: 'Invalid credentials or backend unavailable',
       };
     }
   },
