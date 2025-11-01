@@ -151,12 +151,24 @@ export function AdminSettings() {
         console.log('[ADMIN] ✅ Loaded users from MongoDB:', validUsers.length, 'users');
       }
     } catch (error: any) {
-      // Backend not available - show error
+      // Backend not available - use offline mode with localStorage fallback
       setBackendAvailable(false);
-      console.warn('[ADMIN] ⚠️ Backend not available - user management requires MongoDB connection');
-      // Toast suppressed on first load (grace period handles user notification via modal)
-      // toast.error('⚠️ Backend not available! Click the "Start Backend" button below.');
-      setUsers([]);
+      console.log('[ADMIN] ℹ️ Operating in offline mode - using local storage for user data');
+      // Load users from localStorage as fallback
+      const localUsers = localStorage.getItem('btm_users');
+      if (localUsers) {
+        try {
+          const parsedUsers = JSON.parse(localUsers);
+          const validUsers = (parsedUsers || []).filter((u: any) => u != null && u.id && u.username);
+          setUsers(validUsers);
+          console.log('[ADMIN] ✅ Loaded', validUsers.length, 'users from local storage');
+        } catch (parseError) {
+          console.log('[ADMIN] No valid user data in local storage');
+          setUsers([]);
+        }
+      } else {
+        setUsers([]);
+      }
     }
   };
 
@@ -323,7 +335,8 @@ export function AdminSettings() {
         toast.error(response.error || 'Failed to create user');
       }
     } catch (error: any) {
-      toast.error('Backend not available. Cannot create users without MongoDB connection.');
+      const errorMessage = error.message || 'Failed to create user';
+      toast.error(errorMessage);
       console.error('[ADMIN] ❌ Failed to create user:', error.message);
     }
 
@@ -1135,64 +1148,25 @@ export function AdminSettings() {
                 </CardContent>
               </Card>
 
-              {/* Backend Status Alert */}
+              {/* Backend Status Alert - Subtle info banner */}
               {!backendAvailable && (
-                <Alert className="border-4 border-red-600 bg-gradient-to-br from-red-100 via-orange-50 to-red-100 shadow-xl animate-pulse">
-                  <Server className="w-6 h-6 text-red-600" />
-                  <AlertDescription className="space-y-5">
-                    <div className="space-y-3">
-                      <p className="text-xl font-bold text-red-900">🚨 BACKEND SERVER NOT RUNNING!</p>
-                      <p className="font-semibold text-red-800 text-base">
-                        The MongoDB backend server is offline. You must start it to use the CRM.
+                <Alert className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <AlertCircle className="w-4 h-4 text-blue-600" />
+                  <AlertDescription className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-900">
+                        <strong>Offline Mode:</strong> Using local storage. Connect to MongoDB backend for full synchronization and multi-user support.
                       </p>
-                      <div className="bg-red-900 text-white p-4 rounded-lg">
-                        <p className="font-mono text-sm">
-                          [ADMIN] ❌ Backend not available - user management requires MongoDB connection
-                        </p>
-                      </div>
                     </div>
-                    
-                    <div className="bg-white/80 p-4 rounded-lg border-2 border-red-300">
-                      <p className="font-bold text-red-900 mb-3 text-lg">✅ QUICK FIX:</p>
-                      <div className="space-y-3">
-                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border-2 border-blue-300">
-                          <p className="font-bold text-blue-900 mb-2">🪟 Windows Users:</p>
-                          <p className="text-sm text-gray-700 mb-2">Double-click this file in your project folder:</p>
-                          <code className="bg-blue-900 text-yellow-300 px-3 py-2 rounded block font-bold text-base">
-                            🔴-START-BACKEND-FIXED.bat
-                          </code>
-                          <p className="text-xs text-gray-600 mt-2">Alternative: 🔴-START-EVERYTHING.bat</p>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 border-2 border-green-300">
-                          <p className="font-bold text-green-900 mb-2">🍎 Mac/Linux Users:</p>
-                          <p className="text-sm text-gray-700 mb-2">Run in terminal:</p>
-                          <code className="bg-green-900 text-yellow-300 px-3 py-2 rounded block font-bold text-base">
-                            chmod +x 🔴-START-BACKEND-FIXED.sh && ./🔴-START-BACKEND-FIXED.sh
-                          </code>
-                          <p className="text-xs text-gray-600 mt-2">Alternative: 🔴-START-EVERYTHING.sh</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-100 border-2 border-yellow-500 p-4 rounded-lg">
-                      <p className="font-bold text-yellow-900 mb-2">⚠️ IMPORTANT:</p>
-                      <ul className="list-disc list-inside text-sm text-yellow-900 space-y-1">
-                        <li>Keep the terminal/command window OPEN while using the CRM</li>
-                        <li>Wait for "✅ MongoDB connected successfully" message</li>
-                        <li>Then click "Retry Connection" button below</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <Button 
-                        onClick={loadSettings}
-                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-base py-6"
-                      >
-                        <CheckCircle2 className="w-5 h-5 mr-2" />
-                        Retry Connection
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={loadSettings}
+                      className="ml-4 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Retry Connection
+                    </Button>
                   </AlertDescription>
                 </Alert>
               )}

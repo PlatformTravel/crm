@@ -66,12 +66,12 @@ async function backendFetch(endpoint: string, options: RequestInit = {}, customT
     clearTimeout(timeoutId);
     
     if (error.name === 'AbortError') {
-      throw new Error(`Backend server not responding. Please make sure it's running:\n\ncd backend\ndeno run --allow-net --allow-env server.tsx\n\nOr use: ./backend/start.sh (Mac/Linux) or .\\backend\\start.bat (Windows)`);
+      throw new Error(`Backend server not responding. Please make sure it's running:\n\nQuick Fix:\n1. Double-click: 🔴-START-BACKEND-FIXED.bat (Windows)\n2. OR run: ./🔴-START-BACKEND-FIXED.sh (Mac/Linux)\n3. Wait for "✅ MongoDB connected successfully"`);
     }
     
     // Network errors (server not running)
     if (error.message?.includes('fetch failed') || error.message?.includes('Failed to fetch')) {
-      throw new Error(`Cannot connect to backend server at ${BACKEND_URL}.\n\n🚨 BACKEND SERVER NOT RUNNING!\n\nQuick Fix:\n\n1. Open terminal/command prompt\n2. Run: cd backend\n3. Run: deno run --allow-all server.tsx\n\nOR double-click: START-BACKEND-SERVER.bat (Windows) or START-BACKEND-SERVER.sh (Mac/Linux)\n\n✅ Once you see "SERVER - FULLY OPERATIONAL", refresh this page!`);
+      throw new Error(`Cannot connect to backend server at ${BACKEND_URL}.\n\n🚨 BACKEND SERVER NOT RUNNING!\n\nQuick Fix:\n\n1. Double-click: 🔴-START-BACKEND-FIXED.bat (Windows)\n2. OR run: ./🔴-START-BACKEND-FIXED.sh (Mac/Linux)\n3. Wait for "✅ MongoDB connected successfully"\n\n✅ Once you see "SERVER - FULLY OPERATIONAL", refresh this page!`);
     }
     
     // Silently throw error (handled by calling component)

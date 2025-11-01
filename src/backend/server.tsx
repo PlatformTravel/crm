@@ -807,7 +807,7 @@ Deno.serve(async (req) => {
       console.log('[EMAIL-RECIPIENTS] Save email recipients requested');
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -880,7 +880,7 @@ Deno.serve(async (req) => {
       console.log('[USERS] Get all users requested');
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -917,7 +917,7 @@ Deno.serve(async (req) => {
       console.log('[USERS] Create user requested');
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -994,7 +994,7 @@ Deno.serve(async (req) => {
       console.log(`[USERS] Update user requested: ${userId}`);
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -1056,7 +1056,7 @@ Deno.serve(async (req) => {
       console.log(`[USERS] Delete user requested: ${userId}`);
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -1112,7 +1112,7 @@ Deno.serve(async (req) => {
       console.log('[AUTH] Login attempt');
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -1193,7 +1193,7 @@ Deno.serve(async (req) => {
       console.log('[AUDIT] Get login audit logs');
       
       // Check MongoDB ready
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {
@@ -3881,7 +3881,7 @@ Deno.serve(async (req) => {
       const agentId = path.split('/').pop();
       console.log('[DATABASE] Get assigned customers for agent:', agentId);
       
-      const readyCheck = checkMongoReady();
+      const readyCheck = await checkMongoReady();
       if (readyCheck) return readyCheck;
       
       try {

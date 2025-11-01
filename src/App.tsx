@@ -19,7 +19,6 @@ import { useEffect } from "react";
 import { BACKEND_URL } from "./utils/config";
 import { OfflineModeIndicator } from "./components/OfflineModeIndicator";
 import { BackendRequiredModal } from "./components/BackendRequiredModal";
-import { BackendStatusBanner } from "./components/BackendStatusBanner";
 
 function AppContent() {
   const { currentUser, logout, isAdmin } = useUser();
@@ -107,7 +106,6 @@ function AppContent() {
     return (
       <>
         <BackendRequiredModal />
-        <BackendStatusBanner />
         <Login />
       </>
     );
@@ -122,7 +120,6 @@ function AppContent() {
   if (isAdmin) {
     return (
       <>
-        <BackendStatusBanner />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50" style={{
           backgroundImage: 'linear-gradient(to bottom right, #f8fafc, #dbeafe, #e9d5ff)',
           WebkitBackgroundClip: 'padding-box',
@@ -240,7 +237,6 @@ function AppContent() {
   if (isManager) {
     return (
       <>
-        <BackendStatusBanner />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50" style={{
           backgroundImage: 'linear-gradient(to bottom right, #f8fafc, #dbeafe, #e9d5ff)',
           WebkitBackgroundClip: 'padding-box',
@@ -356,7 +352,6 @@ function AppContent() {
 
   return (
     <>
-      <BackendStatusBanner />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50" style={{
         backgroundImage: 'linear-gradient(to bottom right, #f8fafc, #dbeafe, #e9d5ff)',
         WebkitBackgroundClip: 'padding-box',

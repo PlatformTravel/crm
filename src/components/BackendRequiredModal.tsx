@@ -191,14 +191,10 @@ export function BackendRequiredModal() {
           {/* Additional Help */}
           <div className="text-center pt-2 border-t">
             <p className="text-sm text-gray-600 mb-2">
-              Need more help? Check these files in your project folder:
+              Need more help? Check the QUICK-START.md guide in your project folder
             </p>
-            <div className="flex gap-2 justify-center flex-wrap">
-              <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">🚀-START-BACKEND-HERE.md</code>
-              <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">✅-BACKEND-CONNECTION-GUIDE.md</code>
-            </div>
             <p className="text-xs text-gray-500 mt-2">
-              Comprehensive CORS headers configured ✅ | All endpoints include proper CORS support
+              Backend fully configured ✅ | MongoDB connected ✅ | All endpoints ready ✅
             </p>
           </div>
         </div>
