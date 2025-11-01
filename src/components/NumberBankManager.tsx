@@ -1,4 +1,4 @@
-// Number Bank Manager Component - Redesigned with Beautiful Gradients
+// Assign Numbers Manager Component - Redesigned with Beautiful Gradients
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -19,10 +19,12 @@ import {
   Users,
   Zap,
   Target,
-  Trash2
+  Trash2,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { backendService } from "../utils/backendService";
+import { dataService } from "../utils/dataService";
 
 interface Agent {
   id: string;
@@ -44,12 +46,13 @@ export function NumberBankManager() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [clientBank, setClientBank] = useState<NumberRecord[]>([]);
   const [customerBank, setCustomerBank] = useState<NumberRecord[]>([]);
+  const [specialBank, setSpecialBank] = useState<NumberRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Assignment Dialog
   const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [assignType, setAssignType] = useState<"client" | "customer">("client");
+  const [assignType, setAssignType] = useState<"client" | "customer" | "special">("client");
   const [selectedAgent, setSelectedAgent] = useState("");
   const [assignCount, setAssignCount] = useState("");
 
@@ -62,10 +65,11 @@ export function NumberBankManager() {
 
   const loadData = async () => {
     try {
-      const [agentsData, clientsData, customersData] = await Promise.all([
+      const [agentsData, clientsData, customersData, specialData] = await Promise.all([
         backendService.getAgentMonitoringOverview(),
         backendService.getClients(),
-        backendService.getCustomers()
+        backendService.getCustomers(),
+        dataService.getSpecialDatabase()
       ]);
 
       if (agentsData.success) {
@@ -78,6 +82,19 @@ export function NumberBankManager() {
 
       if (customersData.success) {
         setCustomerBank(customersData.records || customersData.customers || []);
+      }
+
+      if (specialData.success) {
+        // Only show available special numbers in the bank
+        const availableSpecial = (specialData.numbers || [])
+          .filter((num: any) => num.status === 'available')
+          .map((num: any) => ({
+            id: num.id,
+            name: num.purpose,
+            phone: num.phoneNumber,
+            type: 'special'
+          }));
+        setSpecialBank(availableSpecial);
       }
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -160,28 +177,35 @@ export function NumberBankManager() {
       return;
     }
 
-    const bank = assignType === "client" ? clientBank : customerBank;
+    const bank = assignType === "client" ? clientBank : assignType === "customer" ? customerBank : specialBank;
     
     // Check if there are any numbers available
     if (bank.length === 0) {
-      toast.error(`No ${assignType}s available in the bank. All numbers are already assigned.`);
+      toast.error(`No ${assignType === 'special' ? 'special numbers' : assignType + 's'} available in the bank. All numbers are already assigned.`);
       return;
     }
     
     if (count > bank.length) {
-      toast.error(`Only ${bank.length} ${assignType}s available in the bank`);
+      toast.error(`Only ${bank.length} ${assignType === 'special' ? 'special numbers' : assignType + 's'} available in the bank`);
       return;
     }
 
     try {
       const numbersToAssign = bank.slice(0, count).map(record => record.id);
       
-      const response = assignType === "client"
-        ? await backendService.assignClients({ agentId: selectedAgent, clientIds: numbersToAssign })
-        : await backendService.assignCustomers({ agentId: selectedAgent, customerIds: numbersToAssign });
+      let response;
+      if (assignType === "client") {
+        response = await backendService.assignClients({ agentId: selectedAgent, clientIds: numbersToAssign });
+      } else if (assignType === "customer") {
+        response = await backendService.assignCustomers({ agentId: selectedAgent, customerIds: numbersToAssign });
+      } else {
+        // Special database assignment
+        response = await dataService.assignSpecialNumbers(numbersToAssign, selectedAgent);
+      }
 
       if (response.success) {
-        toast.success(`Assigned ${count} ${assignType}(s) to agent`);
+        const label = assignType === 'special' ? 'special number' : assignType;
+        toast.success(`Assigned ${count} ${label}${count > 1 ? 's' : ''} to agent`);
         setShowAssignDialog(false);
         setSelectedAgent("");
         setAssignCount("");
@@ -221,7 +245,7 @@ export function NumberBankManager() {
             <div className="h-16 w-16 rounded-full border-4 border-cyan-200 border-t-cyan-600 animate-spin"></div>
             <div className="absolute inset-0 h-16 w-16 rounded-full bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 blur-xl"></div>
           </div>
-          <p className="text-muted-foreground animate-pulse">Loading number bank...</p>
+          <p className="text-muted-foreground animate-pulse">Loading assignment data...</p>
         </div>
       </div>
     );
@@ -238,7 +262,7 @@ export function NumberBankManager() {
               <Package className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-white mb-1">Number Bank</h1>
+              <h1 className="text-white mb-1">Assign Numbers</h1>
               <p className="text-white/90 text-sm">
                 Assign numbers from database to agents
               </p>
@@ -275,7 +299,7 @@ export function NumberBankManager() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Assignment Type</Label>
-                    <Select value={assignType} onValueChange={(value: "client" | "customer") => setAssignType(value)}>
+                    <Select value={assignType} onValueChange={(value: "client" | "customer" | "special") => setAssignType(value)}>
                       <SelectTrigger className="bg-white/80 border-cyan-200/50 focus:border-cyan-500 focus:ring-cyan-500/20">
                         <SelectValue />
                       </SelectTrigger>
@@ -285,6 +309,12 @@ export function NumberBankManager() {
                         </SelectItem>
                         <SelectItem value="customer">
                           Existing Customers ({customerBank.length} available)
+                        </SelectItem>
+                        <SelectItem value="special">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-amber-600" />
+                            Special Database ({specialBank.length} available)
+                          </div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -314,11 +344,11 @@ export function NumberBankManager() {
                       onChange={(e) => setAssignCount(e.target.value)}
                       placeholder="Enter number of records to assign"
                       min="1"
-                      max={assignType === "client" ? clientBank.length : customerBank.length}
+                      max={assignType === "client" ? clientBank.length : assignType === "customer" ? customerBank.length : specialBank.length}
                       className="bg-white/80 border-cyan-200/50 focus:border-cyan-500 focus:ring-cyan-500/20"
                     />
                     <p className="text-sm text-muted-foreground">
-                      Available: {assignType === "client" ? clientBank.length : customerBank.length} records
+                      Available: {assignType === "client" ? clientBank.length : assignType === "customer" ? customerBank.length : specialBank.length} records
                     </p>
                   </div>
 
@@ -342,7 +372,7 @@ export function NumberBankManager() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
           <CardContent className="p-4">
@@ -383,6 +413,26 @@ export function NumberBankManager() {
           </CardContent>
         </Card>
 
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-amber-500/10">
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <span className="text-sm text-amber-700">Special Available</span>
+                </div>
+                <div className="text-2xl text-amber-900 mb-1">{specialBank.length}</div>
+                <p className="text-xs text-amber-600/70">
+                  Purpose-specific numbers
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
           <CardContent className="p-4">
@@ -404,9 +454,9 @@ export function NumberBankManager() {
         </Card>
       </div>
 
-      {/* Number Bank Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Client Number Bank */}
+      {/* Available Numbers Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Client Numbers */}
         <Card className="border-0 bg-white/60 backdrop-blur-xl shadow-xl group hover:shadow-2xl transition-all duration-300">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/5 to-transparent rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-500"></div>
           <CardHeader className="border-b border-border/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
@@ -414,7 +464,7 @@ export function NumberBankManager() {
               <div className="p-2 rounded-lg bg-blue-500/10">
                 <Database className="h-5 w-5 text-blue-600" />
               </div>
-              Client Number Bank
+              Client Numbers
             </CardTitle>
             <CardDescription>Prospective clients available for assignment</CardDescription>
           </CardHeader>
@@ -459,7 +509,7 @@ export function NumberBankManager() {
           </CardContent>
         </Card>
 
-        {/* Customer Number Bank */}
+        {/* Customer Numbers */}
         <Card className="border-0 bg-white/60 backdrop-blur-xl shadow-xl group hover:shadow-2xl transition-all duration-300">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-500/5 to-transparent rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-500"></div>
           <CardHeader className="border-b border-border/50 bg-gradient-to-r from-green-50/50 to-emerald-50/50">
@@ -467,7 +517,7 @@ export function NumberBankManager() {
               <div className="p-2 rounded-lg bg-green-500/10">
                 <Database className="h-5 w-5 text-green-600" />
               </div>
-              Customer Number Bank
+              Customer Numbers
             </CardTitle>
             <CardDescription>Existing customers available for assignment</CardDescription>
           </CardHeader>
@@ -499,6 +549,38 @@ export function NumberBankManager() {
                     Or import more customers from Database Manager
                   </p>
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Special Numbers */}
+        <Card className="border-0 bg-white/60 backdrop-blur-xl shadow-xl group hover:shadow-2xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-500/5 to-transparent rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-500"></div>
+          <CardHeader className="border-b border-border/50 bg-gradient-to-r from-amber-50/50 to-orange-50/50">
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <Sparkles className="h-5 w-5 text-amber-600" />
+              </div>
+              Special Numbers
+            </CardTitle>
+            <CardDescription>Purpose-specific numbers for targeted campaigns</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 relative">
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 mb-4 shadow-lg">
+                <p className="text-3xl text-amber-600">{specialBank.length}</p>
+              </div>
+              <p className="text-muted-foreground">Available Special Numbers</p>
+            </div>
+            {specialBank.length === 0 && (
+              <div className="space-y-3">
+                <Alert className="border-0 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md">
+                  <AlertCircle className="w-4 h-4 text-blue-600" />
+                  <AlertDescription className="text-blue-700">
+                    <strong>No special numbers available.</strong> Upload numbers in Special Database Manager.
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
           </CardContent>

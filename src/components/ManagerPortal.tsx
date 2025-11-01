@@ -26,7 +26,7 @@ export function ManagerPortal() {
           </TabsTrigger>
           <TabsTrigger value="numberbank">
             <Users className="w-4 h-4 mr-2" />
-            Number Bank
+            Assign Numbers
           </TabsTrigger>
           <TabsTrigger value="database">
             <Database className="w-4 h-4 mr-2" />

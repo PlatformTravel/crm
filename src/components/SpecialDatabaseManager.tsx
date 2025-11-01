@@ -788,18 +788,21 @@ export function SpecialDatabaseManager() {
 
       {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-orange-600" />
-              Upload Numbers to Special Database
-            </DialogTitle>
-            <DialogDescription>
-              Add numbers for a specific purpose. Enter manually or import from CSV.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col gap-0 p-0">
+          <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-orange-600" />
+                Upload Numbers to Special Database
+              </DialogTitle>
+              <DialogDescription>
+                Add numbers for a specific purpose. Enter manually or import from CSV.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4">
+          <div className="px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+            <div className="space-y-4">
             {/* Import Mode Tabs */}
             <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
               <button
@@ -889,12 +892,15 @@ export function SpecialDatabaseManager() {
                 {uploadNumbers && (
                   <div className="space-y-2">
                     <Label>Imported Numbers Preview ({uploadNumbers.split('\n').filter(n => n).length} numbers)</Label>
-                    <Textarea
-                      value={uploadNumbers}
-                      onChange={(e) => setUploadNumbers(e.target.value)}
-                      rows={6}
-                      className="font-mono text-sm"
-                    />
+                    <div className="border rounded-md bg-white">
+                      <ScrollArea className="h-[150px]">
+                        <Textarea
+                          value={uploadNumbers}
+                          onChange={(e) => setUploadNumbers(e.target.value)}
+                          className="font-mono text-sm border-0 resize-none min-h-[150px]"
+                        />
+                      </ScrollArea>
+                    </div>
                     <p className="text-sm text-green-600 flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4" />
                       Numbers imported successfully. You can edit them before uploading.
@@ -931,8 +937,10 @@ export function SpecialDatabaseManager() {
               />
             </div>
           </div>
+          </div>
 
-          <DialogFooter>
+          <div className="sticky bottom-0 bg-white z-10 px-6 py-4 border-t">
+            <DialogFooter className="sm:justify-end">
             <Button variant="outline" onClick={() => {
               setUploadDialogOpen(false);
               setCsvFile(null);
@@ -951,7 +959,8 @@ export function SpecialDatabaseManager() {
               <Upload className="h-4 w-4 mr-2" />
               Upload {uploadNumbers.split('\n').filter(n => n.trim()).length || 0} Numbers
             </Button>
-          </DialogFooter>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

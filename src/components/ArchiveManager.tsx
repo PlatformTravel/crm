@@ -19,7 +19,8 @@ import {
   Phone,
   Mail,
   RotateCcw,
-  Package
+  Package,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { backendService } from "../utils/backendService";
@@ -30,7 +31,7 @@ interface ArchivedRecord {
   phone: string;
   email?: string;
   company?: string;
-  type: 'client' | 'customer';
+  type: 'client' | 'customer' | 'special';
   archivedAt: string;
   archivedBy: string;
   reason?: string;
@@ -42,7 +43,7 @@ export function ArchiveManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "client" | "customer">("all");
+  const [filterType, setFilterType] = useState<"all" | "client" | "customer" | "special">("all");
 
   useEffect(() => {
     loadArchivedRecords();
@@ -94,7 +95,8 @@ export function ArchiveManager() {
       const result = await backendService.restoreFromArchive(record.id, record.type);
       
       if (result.success) {
-        toast.success(`${record.type === 'client' ? 'Client' : 'Customer'} restored successfully`);
+        const typeLabel = record.type === 'client' ? 'Client' : record.type === 'customer' ? 'Customer' : 'Special number';
+        toast.success(`${typeLabel} restored successfully`);
         loadArchivedRecords();
       } else {
         toast.error(result.error || "Failed to restore record");
@@ -191,7 +193,7 @@ export function ArchiveManager() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
           <CardContent className="p-4">
@@ -255,6 +257,28 @@ export function ArchiveManager() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-pink-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -mr-12 -mt-12"></div>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-purple-500/10">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-sm text-purple-700">Archived Special</span>
+                </div>
+                <div className="text-2xl text-purple-900 mb-1">
+                  {archivedRecords.filter(r => r.type === 'special').length}
+                </div>
+                <p className="text-xs text-purple-600/70">
+                  Special database numbers
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Archived Records Card */}
@@ -310,6 +334,15 @@ export function ArchiveManager() {
               >
                 Customers
               </Button>
+              <Button
+                variant={filterType === "special" ? "default" : "outline"}
+                onClick={() => setFilterType("special")}
+                size="sm"
+                className={filterType === "special" ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg" : "border-purple-200 hover:bg-purple-50"}
+              >
+                <Sparkles className="w-3 h-3 mr-1" />
+                Special
+              </Button>
             </div>
           </div>
 
@@ -359,12 +392,20 @@ export function ArchiveManager() {
                         <TableCell>
                           <Badge 
                             variant="secondary"
-                            className={record.type === 'client' 
-                              ? "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border-blue-200" 
-                              : "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200"
+                            className={
+                              record.type === 'client' 
+                                ? "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border-blue-200" 
+                                : record.type === 'customer'
+                                ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200"
+                                : "bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200"
                             }
                           >
-                            {record.type}
+                            {record.type === 'special' ? (
+                              <span className="flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                special
+                              </span>
+                            ) : record.type}
                           </Badge>
                         </TableCell>
                         <TableCell>

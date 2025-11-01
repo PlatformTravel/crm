@@ -893,10 +893,14 @@ Deno.serve(async (req) => {
           return convertMongoDoc(rest);
         });
         
+        // Also provide agents list (users with role === 'Agent')
+        const agents = sanitizedUsers.filter((u: any) => u.role === 'Agent');
+        
         return new Response(
           JSON.stringify({
             success: true,
-            users: sanitizedUsers
+            users: sanitizedUsers,
+            agents: agents  // Include agents for easy filtering
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -2626,8 +2630,17 @@ Deno.serve(async (req) => {
       const users = await collection.find({}).toArray();
       // Don't send passwords to frontend
       const sanitizedUsers = users.map(({ password, ...user }: any) => user);
+      const convertedUsers = convertMongoDocs(sanitizedUsers);
+      
+      // Also provide agents list (users with role === 'Agent')
+      const agents = convertedUsers.filter((u: any) => u.role === 'Agent');
+      
       return new Response(
-        JSON.stringify({ success: true, users: convertMongoDocs(sanitizedUsers) }),
+        JSON.stringify({ 
+          success: true, 
+          users: convertedUsers,
+          agents: agents  // Include agents for easy filtering
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
