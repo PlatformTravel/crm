@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { backendService } from '../utils/backendService';
+import { dataService } from '../utils/dataService';
 
 export type Permission = 
   | 'view_team_performance'
@@ -141,24 +141,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const checkAndResetDaily = async () => {
     try {
-      const data = await backendService.checkDailyReset();
-      if (data.wasReset) {
-        console.log('[USER CONTEXT] Daily progress was auto-reset');
+      // Check local date first
+      const today = new Date().toISOString().split('T')[0];
+      if (lastResetDate && lastResetDate !== today) {
+        console.log('[USER CONTEXT] Daily progress needs reset');
         resetDailyProgress();
       }
     } catch (error: any) {
-      // Silently fail - server sync is optional, daily reset is handled client-side
-      // Suppress database initialization errors (503) - they are expected during startup
-      const { isDatabaseInitializing } = await import('../utils/backendService');
-      if (isDatabaseInitializing(error)) {
-        // Database is still initializing, silently skip
-        return;
-      }
-      
-      // Only log if it's not a network error
-      if (!(error instanceof TypeError && error.message.includes('fetch'))) {
-        console.error('[USER CONTEXT] Error checking daily reset:', error);
-      }
+      console.error('[USER CONTEXT] Error checking daily reset:', error);
     }
   };
 
@@ -176,24 +166,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const newCount = callsToday + 1;
     setCallsToday(newCount);
     localStorage.setItem('btm_calls_today', newCount.toString());
-    
-    // Sync to backend (optional - silently fail if server is offline)
-    try {
-      await backendService.updateDailyProgress(
-        currentUser.id,
-        newCount,
-        new Date().toISOString()
-      );
-    } catch (error: any) {
-      // Silently fail - call count is tracked in localStorage
-      // Only log non-network errors
-      if (!(error instanceof TypeError && error.message.includes('fetch'))) {
-        console.error('[USER CONTEXT] Error syncing call count:', error);
-      }
-    }
   };
 
   const login = async (username: string, password: string): Promise<boolean> => {
+    console.log('[LOGIN] Attempting login for username:', username);
+    
+    // Use the unified dataService which handles backend/localStorage fallback automatically
+    try {
+      const response = await dataService.login(username, password);
+      
+      if (response.success && response.user) {
+        console.log('[LOGIN] ✅ Authentication successful:', response.user.username);
+        setCurrentUser(response.user);
+        localStorage.setItem('btm_current_user', JSON.stringify(response.user));
+        return true;
+      } else {
+        console.log('[LOGIN] ❌ Authentication failed');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('[LOGIN] Login error:', error.message);
+      return false;
+    }
+  };
+  
+  // OLD LOGIN CODE (keeping for reference but not used)
+  const oldLogin = async (username: string, password: string): Promise<boolean> => {
     console.log('[LOGIN] Attempting login for username:', username);
     
     // FIRST: Try MongoDB backend (this is where users created via Admin panel are stored)
@@ -206,7 +204,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => reject(new Error('MongoDB connection timeout')), 5000)
       );
       
-      const loginPromise = backendService.login(username, password);
+      const loginPromise = dataService.login(username, password);
       
       const response = await Promise.race([loginPromise, timeoutPromise]) as any;
       

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { motion } from "motion/react";
-import btmLogo from "figma:asset/da4baf9e9e75fccb7e053a2cc52f5b251f4636a9.png";
+import btmLogo from "figma:asset/267e639331ae5b3281b1b8f9c2903af5458190f3.png";
 import { backendService } from "../utils/backendService";
 
 interface LoginProps {
@@ -384,31 +384,34 @@ export function Login({ onBack }: LoginProps = {}) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4"
+                className="relative group"
               >
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-black text-white mb-0.5">
-                      30+
+                <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all duration-300">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-4xl font-black text-white mb-1">
+                        30+
+                      </div>
+                      <div className="text-sm text-white/70 uppercase tracking-wider font-semibold">
+                        Daily Calls
+                      </div>
                     </div>
-                    <div className="text-xs text-white/70 uppercase tracking-wider font-semibold">
-                      Daily Calls
+                    <div>
+                      <div className="text-4xl font-black text-white mb-1">
+                        24/7
+                      </div>
+                      <div className="text-sm text-white/70 uppercase tracking-wider font-semibold">
+                        Support
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-white mb-0.5">
-                      24/7
-                    </div>
-                    <div className="text-xs text-white/70 uppercase tracking-wider font-semibold">
-                      Support
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-white mb-0.5">
-                      100%
-                    </div>
-                    <div className="text-xs text-white/70 uppercase tracking-wider font-semibold">
-                      Secure
+                    <div>
+                      <div className="text-4xl font-black text-white mb-1">
+                        100%
+                      </div>
+                      <div className="text-sm text-white/70 uppercase tracking-wider font-semibold">
+                        Secure
+                      </div>
                     </div>
                   </div>
                 </div>

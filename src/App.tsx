@@ -17,6 +17,7 @@ import { Button } from "./components/ui/button";
 import { Badge } from "./components/ui/badge";
 import { useEffect } from "react";
 import { BACKEND_URL } from "./utils/config";
+import { OfflineModeIndicator } from "./components/OfflineModeIndicator";
 
 function AppContent() {
   const { currentUser, logout, isAdmin } = useUser();
@@ -445,6 +446,9 @@ function AppContent() {
           </div>
         </div>
       </div>
+
+      {/* Offline Mode Indicator */}
+      <OfflineModeIndicator />
 
       <div className="container mx-auto px-3 sm:px-6 py-6 sm:py-10">
         {/* Agent Classic View - Original Tabs Interface */}

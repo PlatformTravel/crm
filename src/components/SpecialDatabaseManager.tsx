@@ -31,9 +31,10 @@ import {
   UserPlus,
   PhoneCall,
   AlertCircle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  FileSpreadsheet
 } from 'lucide-react';
-import { backendService } from '../utils/backendService';
+import { dataService } from '../utils/dataService';
 import { toast } from 'sonner@2.0.3';
 
 interface SpecialNumber {
@@ -77,6 +78,8 @@ export function SpecialDatabaseManager() {
   const [uploadNumbers, setUploadNumbers] = useState('');
   const [uploadPurpose, setUploadPurpose] = useState('');
   const [uploadNotes, setUploadNotes] = useState('');
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvImportMode, setCsvImportMode] = useState<'manual' | 'csv'>('manual');
   
   // Assignment states
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -99,9 +102,9 @@ export function SpecialDatabaseManager() {
   const fetchData = async () => {
     try {
       const [numbersData, archiveData, agentsData] = await Promise.all([
-        backendService.getSpecialDatabase(),
-        backendService.getSpecialDatabaseArchive(),
-        backendService.getAgents()
+        dataService.getSpecialDatabase(),
+        dataService.getSpecialDatabaseArchive(),
+        dataService.getAgents()
       ]);
 
       if (numbersData.success) {
@@ -116,14 +119,75 @@ export function SpecialDatabaseManager() {
         setAgents(agentsData.agents || []);
       }
     } catch (error: any) {
-      if (!(error instanceof TypeError && error.message.includes('fetch'))) {
-        console.error('Error fetching special database:', error);
-        toast.error('Failed to load special database');
-      }
+      console.error('Error fetching special database:', error);
+      toast.error('Failed to load special database');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleCsvFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+
+    setCsvFile(file);
+    
+    // Parse CSV and extract phone numbers
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      
+      // Skip header row if it exists (check if first line contains common headers)
+      const hasHeader = lines[0]?.toLowerCase().includes('phone') || 
+                        lines[0]?.toLowerCase().includes('number') ||
+                        lines[0]?.toLowerCase().includes('mobile');
+      
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+      
+      // Extract phone numbers (first column by default)
+      const numbers = dataLines
+        .map(line => {
+          const columns = line.split(',').map(col => col.trim().replace(/^["']|["']$/g, ''));
+          return columns[0]; // First column
+        })
+        .filter(num => num && num.length > 0);
+      
+      if (numbers.length === 0) {
+        toast.error('No phone numbers found in CSV file');
+        return;
+      }
+      
+      // Update the textarea with parsed numbers
+      setUploadNumbers(numbers.join('\n'));
+      toast.success(`Imported ${numbers.length} phone numbers from CSV`);
+    } catch (error) {
+      console.error('Error parsing CSV:', error);
+      toast.error('Failed to parse CSV file');
+    }
+  };
+
+  const downloadCsvTemplate = () => {
+    const template = `Phone Number,Purpose,Notes
++234 801 234 5678,VIP Clients,Important customer
++234 802 345 6789,Event Invites,Conference attendees
++234 803 456 7890,Special Campaign,Promotional offer`;
+    
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'special-database-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV template downloaded');
   };
 
   const handleUpload = async () => {
@@ -143,18 +207,20 @@ export function SpecialDatabaseManager() {
         return;
       }
 
-      const result = await backendService.uploadToSpecialDatabase({
+      const result = await dataService.uploadToSpecialDatabase({
         phoneNumbers,
         purpose: uploadPurpose,
         notes: uploadNotes
       });
 
       if (result.success) {
-        toast.success(`Successfully uploaded ${result.uploaded} number(s)`);
+        toast.success(`Successfully uploaded ${result.count || phoneNumbers.length} number(s)`);
         setUploadDialogOpen(false);
         setUploadNumbers('');
         setUploadPurpose('');
         setUploadNotes('');
+        setCsvFile(null);
+        setCsvImportMode('manual');
         fetchData();
       } else {
         toast.error(result.error || 'Failed to upload numbers');
@@ -172,10 +238,10 @@ export function SpecialDatabaseManager() {
     }
 
     try {
-      const result = await backendService.assignSpecialNumbers({
-        agentId: selectedAgent,
-        numberIds: numbersToAssign.map(n => n.id)
-      });
+      const result = await dataService.assignSpecialNumbers(
+        numbersToAssign.map(n => n.id),
+        selectedAgent
+      );
 
       if (result.success) {
         toast.success(`Assigned ${numbersToAssign.length} number(s) to agent`);
@@ -196,7 +262,7 @@ export function SpecialDatabaseManager() {
     if (!numberToDelete) return;
 
     try {
-      const result = await backendService.deleteSpecialNumber(numberToDelete.id);
+      const result = await dataService.deleteSpecialNumber(numberToDelete.id);
 
       if (result.success) {
         toast.success('Number deleted successfully');
@@ -219,9 +285,9 @@ export function SpecialDatabaseManager() {
     }
 
     try {
-      const result = await backendService.recycleSpecialNumbers({
-        numberIds: numbersToRecycle.map(n => n.id)
-      });
+      const result = await dataService.recycleSpecialNumbers(
+        numbersToRecycle.map(n => n.id)
+      );
 
       if (result.success) {
         toast.success(`Recycled ${numbersToRecycle.length} number(s) back to database`);
@@ -729,11 +795,37 @@ export function SpecialDatabaseManager() {
               Upload Numbers to Special Database
             </DialogTitle>
             <DialogDescription>
-              Add numbers for a specific purpose. One number per line.
+              Add numbers for a specific purpose. Enter manually or import from CSV.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Import Mode Tabs */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+              <button
+                onClick={() => setCsvImportMode('manual')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  csvImportMode === 'manual'
+                    ? 'bg-white text-orange-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FileText className="h-4 w-4 inline mr-2" />
+                Manual Entry
+              </button>
+              <button
+                onClick={() => setCsvImportMode('csv')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  csvImportMode === 'csv'
+                    ? 'bg-white text-orange-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FileSpreadsheet className="h-4 w-4 inline mr-2" />
+                Import CSV
+              </button>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="purpose">
                 Purpose <span className="text-red-500">*</span>
@@ -746,22 +838,87 @@ export function SpecialDatabaseManager() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="numbers">
-                Phone Numbers <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="numbers"
-                placeholder="+234 801 234 5678&#10;+234 802 345 6789&#10;+234 803 456 7890"
-                value={uploadNumbers}
-                onChange={(e) => setUploadNumbers(e.target.value)}
-                rows={8}
-                className="font-mono"
-              />
-              <p className="text-sm text-muted-foreground">
-                Enter one phone number per line
-              </p>
-            </div>
+            {csvImportMode === 'manual' ? (
+              <div className="space-y-2">
+                <Label htmlFor="numbers">
+                  Phone Numbers <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="numbers"
+                  placeholder="+234 801 234 5678&#10;+234 802 345 6789&#10;+234 803 456 7890"
+                  value={uploadNumbers}
+                  onChange={(e) => setUploadNumbers(e.target.value)}
+                  rows={8}
+                  className="font-mono"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Enter one phone number per line
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* CSV Upload */}
+                <div className="space-y-2">
+                  <Label htmlFor="csv-file">
+                    CSV File <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCsvFileChange}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={downloadCsvTemplate}
+                      className="shrink-0"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Template
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Upload a CSV file with phone numbers in the first column
+                  </p>
+                </div>
+
+                {/* Preview Area */}
+                {uploadNumbers && (
+                  <div className="space-y-2">
+                    <Label>Imported Numbers Preview ({uploadNumbers.split('\n').filter(n => n).length} numbers)</Label>
+                    <Textarea
+                      value={uploadNumbers}
+                      onChange={(e) => setUploadNumbers(e.target.value)}
+                      rows={6}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-sm text-green-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Numbers imported successfully. You can edit them before uploading.
+                    </p>
+                  </div>
+                )}
+
+                {/* CSV Format Info */}
+                {!uploadNumbers && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      CSV Format
+                    </h4>
+                    <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                      <li>First column should contain phone numbers</li>
+                      <li>Optional: Include headers (will be auto-detected and skipped)</li>
+                      <li>Example format: +234 XXX XXX XXXX</li>
+                      <li>Download the template to see an example</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (Optional)</Label>
@@ -776,15 +933,23 @@ export function SpecialDatabaseManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setUploadDialogOpen(false);
+              setCsvFile(null);
+              setCsvImportMode('manual');
+              setUploadNumbers('');
+              setUploadPurpose('');
+              setUploadNotes('');
+            }}>
               Cancel
             </Button>
             <Button 
               onClick={handleUpload}
+              disabled={!uploadNumbers.trim() || !uploadPurpose.trim()}
               className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
             >
               <Upload className="h-4 w-4 mr-2" />
-              Upload Numbers
+              Upload {uploadNumbers.split('\n').filter(n => n.trim()).length || 0} Numbers
             </Button>
           </DialogFooter>
         </DialogContent>
