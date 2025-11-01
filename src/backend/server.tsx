@@ -2498,6 +2498,11 @@ Deno.serve(async (req) => {
     }
 
     if (path === '/assignments/mark-called' && req.method === 'POST') {
+      const mongoCheck = await checkMongoReady();
+      if (mongoCheck) {
+        return mongoCheck;
+      }
+      
       const body = await req.json();
       const { assignmentId, outcome } = body;
       
@@ -3662,30 +3667,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (path === '/assignments/mark-called' && req.method === 'POST') {
-      const body = await req.json();
-      const { assignmentId, outcome } = body;
-      
-      const collection = await getCollection(Collections.NUMBER_ASSIGNMENTS);
-      
-      await collection.updateOne(
-        { id: assignmentId },
-        { 
-          $set: { 
-            called: true,
-            calledAt: new Date().toISOString(),
-            outcome: outcome || 'completed',
-            status: 'completed'
-          } 
-        }
-      );
-      
-      return new Response(
-        JSON.stringify({ success: true, message: 'Assignment marked as called' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // ==================== CALL LOGS ====================
     if (path === '/call-logs' && req.method === 'GET') {
       const collection = await getCollection(Collections.CALL_LOGS);
@@ -3736,18 +3717,21 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const collection = await getCollection(Collections.ARCHIVE);
       
+      // Remove MongoDB _id field to prevent duplicate key errors
+      const { _id, ...bodyWithoutId } = body;
+      
       // Use existing ID from body, or generate new one
-      const archiveId = body.id || generateId();
+      const archiveId = bodyWithoutId.id || generateId();
       
       const archiveEntry = {
-        ...body,
+        ...bodyWithoutId,
         id: archiveId,
         archivedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       
       // Use replaceOne with upsert to avoid duplicate key errors
-      // If document with same _id exists, it will be replaced
+      // If document with same id exists, it will be replaced
       await collection.replaceOne(
         { id: archiveId },
         archiveEntry,

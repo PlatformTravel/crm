@@ -1964,7 +1964,7 @@ export function ClientCRM() {
                     {reportFormat === "html" && (
                       <>
                         <FileText className="w-4 h-4 mr-2" />
-                        Generate HTML Report
+                        Generate Report
                       </>
                     )}
                     {reportFormat === "pdf" && (

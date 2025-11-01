@@ -562,23 +562,33 @@ export function CustomerService() {
         throw new Error(response.error || 'Failed to save interaction');
       }
       const updatedNote = `[${interaction.timestamp}] ${currentUser?.fullName || currentUser?.username} - ${interactionOutcome.toUpperCase()}: ${completionNotes}\n\n${selectedCustomer.notes || ''}`;
-      const updatedCustomers = customers.map(c =>
-        c.id === selectedCustomer.id
-          ? {
-              ...c,
-              notes: updatedNote,
-              lastContact: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-              interactionCompleted: true
-            }
-          : c
-      );
+      
+      // Create customer with updated notes for archiving
+      const completedCustomer = {
+        ...selectedCustomer,
+        notes: updatedNote,
+        lastContact: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        interactionCompleted: true,
+        completedAt: new Date().toISOString()
+      };
+      
+      // Remove from active customers list
+      const updatedCustomers = customers.filter(c => c.id !== selectedCustomer.id);
       setCustomers(updatedCustomers);
       await saveCustomersToBackend(updatedCustomers);
+      
+      // Archive the completed customer
+      const updatedArchived = [...archivedCustomers, completedCustomer];
+      setArchivedCustomers(updatedArchived);
+      await saveArchivedCustomersToBackend(updatedArchived);
+      
+      console.log('[CUSTOMER SERVICE] ✅ Customer interaction completed and archived:', selectedCustomer.name);
+      
       setCompletionNotes("");
       setInteractionOutcome("resolved");
       setIsCompleteDialogOpen(false);
       setIsDialogOpen(false);
-      toast.success(`Interaction completed successfully! (${interactionOutcome.replace('-', ' ')})`);
+      toast.success(`Interaction completed and archived! (${interactionOutcome.replace('-', ' ')})`);
     } catch (error) {
       console.error('[CUSTOMER SERVICE] Error completing interaction:', error);
       toast.error(`Failed to complete interaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -968,12 +978,13 @@ export function CustomerService() {
   }, [totalCustomers, completedInteractions, pendingInteractions, customers.length, currentUser?.name]);
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-3xl">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-4xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">Customer Service Portal</h2>
-          <p className="text-lg text-muted-foreground mt-2">Manage existing customer relationships and support</p>
-        </div>
+    <TooltipProvider>
+      <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-3xl">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-4xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">Customer Service Portal</h2>
+            <p className="text-lg text-muted-foreground mt-2">Manage existing customer relationships and support</p>
+          </div>
         
         <div className="flex gap-3 flex-wrap">
           {isManager && (
@@ -1155,18 +1166,6 @@ export function CustomerService() {
             <p className="text-xs text-gray-500 mt-1">Awaiting completion</p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white/70 backdrop-blur-xl border-white/20 shadow-xl shadow-purple-500/10">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-600 flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Total Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">₦{totalRevenue.toLocaleString()}</p>
-          </CardContent>
-        </Card>
       </div>
 
       <Card className="bg-white/70 backdrop-blur-xl border-white/20 shadow-xl">
@@ -1299,53 +1298,69 @@ export function CustomerService() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <TooltipProvider>
-                          <div className="flex justify-end gap-2">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleMakeCall(customer.phone, customer.name)}
-                                  className="hover:bg-green-50 hover:text-green-700"
-                                >
-                                  <PhoneCall className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Call customer</TooltipContent>
-                            </Tooltip>
-                            
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleViewCustomer(customer)}
-                                  className="hover:bg-blue-50 hover:text-blue-700"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>View details</TooltipContent>
-                            </Tooltip>
-                            
-                            {isManager && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleDeleteClick(customer)}
-                                    className="hover:bg-red-50 hover:text-red-700"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete customer</TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </TooltipProvider>
+                        <div className="flex justify-end gap-2" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('[CUSTOMER SERVICE] Call button clicked for:', customer.name);
+                              handleMakeCall(customer.phone, customer.name);
+                            }}
+                            onMouseDown={(e) => {
+                              console.log('[CUSTOMER SERVICE] Call button mousedown for:', customer.name);
+                            }}
+                            className="hover:bg-green-50 hover:text-green-700 cursor-pointer relative z-10"
+                            type="button"
+                            title="Call customer"
+                            style={{ pointerEvents: 'auto' }}
+                          >
+                            <PhoneCall className="w-4 h-4 pointer-events-none" />
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('[CUSTOMER SERVICE] View details button clicked for:', customer.name);
+                              handleViewCustomer(customer);
+                            }}
+                            onMouseDown={(e) => {
+                              console.log('[CUSTOMER SERVICE] View button mousedown for:', customer.name);
+                            }}
+                            className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer relative z-10"
+                            type="button"
+                            title="View details"
+                            style={{ pointerEvents: 'auto' }}
+                          >
+                            <Eye className="w-4 h-4 pointer-events-none" />
+                          </Button>
+                          
+                          {isManager && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('[CUSTOMER SERVICE] Delete button clicked for:', customer.name);
+                                handleDeleteClick(customer);
+                              }}
+                              onMouseDown={(e) => {
+                                console.log('[CUSTOMER SERVICE] Delete button mousedown for:', customer.name);
+                              }}
+                              className="hover:bg-red-50 hover:text-red-700 cursor-pointer relative z-10"
+                              type="button"
+                              title="Delete customer"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              <Trash2 className="w-4 h-4 pointer-events-none" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1390,43 +1405,41 @@ export function CustomerService() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <DraggableDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          {selectedCustomer && (
-            <div className="space-y-6">
-              <DialogHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <DialogTitle className="text-2xl">{selectedCustomer.name}</DialogTitle>
-                    <DialogDescription className="mt-2">
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge 
-                          variant={selectedCustomer.status === "vip" ? "default" : "outline"}
-                          className={
-                            selectedCustomer.status === "vip" ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white" :
-                            selectedCustomer.status === "corporate" ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white" :
-                            selectedCustomer.status === "active" ? "bg-green-100 text-green-700 border-green-300" : ""
-                          }
-                        >
-                          {selectedCustomer.status}
-                        </Badge>
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                          {selectedCustomer.business}
-                        </Badge>
-                      </div>
-                    </DialogDescription>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={openEditCustomerDialog}
-                    variant="outline"
-                    className="hover:bg-purple-50"
+      {isDialogOpen && selectedCustomer && (
+        <DraggableDialog 
+          isOpen={isDialogOpen} 
+          onClose={() => setIsDialogOpen(false)}
+          title={selectedCustomer.name}
+        >
+          <div className="space-y-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={selectedCustomer.status === "vip" ? "default" : "outline"}
+                    className={
+                      selectedCustomer.status === "vip" ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white" :
+                      selectedCustomer.status === "corporate" ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white" :
+                      selectedCustomer.status === "active" ? "bg-green-100 text-green-700 border-green-300" : ""
+                    }
                   >
-                    <Pencil className="w-3 h-3 mr-2" />
-                    Edit Info
-                  </Button>
+                    {selectedCustomer.status}
+                  </Badge>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {selectedCustomer.business}
+                  </Badge>
                 </div>
-              </DialogHeader>
+              </div>
+              <Button
+                size="sm"
+                onClick={openEditCustomerDialog}
+                variant="outline"
+                className="hover:bg-purple-50"
+              >
+                <Pencil className="w-3 h-3 mr-2" />
+                Edit Info
+              </Button>
+            </div>
 
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
                 <h3 className="text-lg mb-4 text-blue-900">Contact Information</h3>
@@ -1509,9 +1522,8 @@ export function CustomerService() {
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </DraggableDialog>
+        </DraggableDialog>
+      )}
 
       <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
         <DialogContent>
@@ -1582,6 +1594,9 @@ export function CustomerService() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Customer Information</DialogTitle>
+            <DialogDescription>
+              Update the customer's contact details and information.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1617,6 +1632,7 @@ export function CustomerService() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }
 
