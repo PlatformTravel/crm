@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 BTM Travel CRM - Backend Connection Fix Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .error-box {
+            background: #fee;
+            border: 3px solid #f00;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .error-box code {
+            background: #c00;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: block;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .steps {
+            margin: 30px 0;
+        }
+        
+        .step {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .step h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .step ol {
+            margin-left: 20px;
+        }
+        
+        .step li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .command-box {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .highlight {
+            background: #ffe066;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .success-indicators {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .success-indicators h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+        
+        .success-indicators ul {
+            list-style: none;
+        }
+        
+        .success-indicators li::before {
+            content: "✅ ";
+            margin-right: 10px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            margin: 10px 10px 10px 0;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Backend Connection Fix Guide</h1>
+            <p>BTM Travel CRM - MongoDB Backend Server</p>
+        </div>
+        
+        <div class="content">
+            <div class="error-box">
+                <h2>❌ Current Error:</h2>
+                <code>[ADMIN] ❌ Backend not available - user management requires MongoDB connection</code>
+            </div>
+            
+            <h2 style="margin-bottom: 20px;">🎯 Quick Fix - Follow These Steps:</h2>
+            
+            <div class="steps">
+                <div class="step">
+                    <h3>🪟 For Windows Users:</h3>
+                    <ol>
+                        <li>Go to your project folder (where you have the BTM Travel CRM files)</li>
+                        <li>Look for a file named: <span class="highlight">🔴-START-BACKEND-FIXED.bat</span></li>
+                        <li><strong>Double-click</strong> that file</li>
+                        <li>A command window will open - <strong>DO NOT CLOSE IT!</strong></li>
+                        <li>Wait for these messages to appear:
+                            <div class="command-box">🟢 BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅<br>[MongoDB] ✅ Connected successfully</div>
+                        </li>
+                        <li>Once you see those messages, go back to your browser and refresh the page</li>
+                    </ol>
+                    <p style="margin-top: 10px;"><em>Alternative file: 🔴-START-EVERYTHING.bat</em></p>
+                </div>
+                
+                <div class="step">
+                    <h3>🍎 For Mac/Linux Users:</h3>
+                    <ol>
+                        <li>Open <strong>Terminal</strong> (Applications → Utilities → Terminal)</li>
+                        <li>Navigate to your project folder using the <code>cd</code> command</li>
+                        <li>Make the script executable:
+                            <div class="command-box">chmod +x 🔴-START-BACKEND-FIXED.sh</div>
+                        </li>
+                        <li>Run the script:
+                            <div class="command-box">./🔴-START-BACKEND-FIXED.sh</div>
+                        </li>
+                        <li><strong>Keep the Terminal window OPEN!</strong></li>
+                        <li>Wait for the success messages:
+                            <div class="command-box">🟢 BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅<br>[MongoDB] ✅ Connected successfully</div>
+                        </li>
+                        <li>Go back to your browser and refresh the page</li>
+                    </ol>
+                    <p style="margin-top: 10px;"><em>Alternative file: 🔴-START-EVERYTHING.sh</em></p>
+                </div>
+                
+                <div class="step">
+                    <h3>⚙️ Manual Method (If Scripts Don't Work):</h3>
+                    <ol>
+                        <li>Open a terminal/command prompt</li>
+                        <li>Navigate to your project folder</li>
+                        <li>Run these commands:
+                            <div class="command-box">cd backend<br>deno run --allow-all server.tsx</div>
+                        </li>
+                        <li>Wait for the success messages</li>
+                        <li>Keep the terminal OPEN</li>
+                        <li>Refresh your browser</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="success-indicators">
+                <h4>✅ How to Know It's Working:</h4>
+                <ul>
+                    <li>The terminal shows: <strong>[MongoDB] ✅ Connected successfully</strong></li>
+                    <li>The terminal shows: <strong>🚀 Server running on http://localhost:8000</strong></li>
+                    <li>A green banner appears: <strong>BTM TRAVEL CRM SERVER - FULLY OPERATIONAL!</strong></li>
+                    <li>In your browser, the error message disappears</li>
+                    <li>A green "Backend Server Status" indicator appears in the top-right corner</li>
+                </ul>
+            </div>
+            
+            <div class="warning-box">
+                <h4>⚠️ VERY IMPORTANT:</h4>
+                <ul style="list-style: disc; margin-left: 20px;">
+                    <li><strong>Keep the terminal/command window OPEN</strong> while using the CRM</li>
+                    <li>If you close it, the backend will stop and you'll see the error again</li>
+                    <li>You need to start the backend <strong>every time</strong> before using the CRM</li>
+                    <li>When you're done using the CRM, you can press Ctrl+C in the terminal to stop it</li>
+                </ul>
+            </div>
+            
+            <h3 style="margin-top: 30px;">🔧 Troubleshooting:</h3>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 15px;">
+                <p><strong>Problem:</strong> "Deno is not installed"</p>
+                <p><strong>Solution:</strong> Install Deno from <a href="https://deno.land/" target="_blank">https://deno.land/</a></p>
+                <br>
+                <p><strong>Problem:</strong> "Port 8000 already in use"</p>
+                <p><strong>Solution:</strong> Kill existing Deno processes:</p>
+                <div class="command-box">
+                    Windows: taskkill /F /IM deno.exe<br>
+                    Mac/Linux: pkill -9 deno
+                </div>
+                <br>
+                <p><strong>Problem:</strong> "MongoDB connection failed"</p>
+                <p><strong>Solution:</strong> Check your internet connection (MongoDB Atlas requires internet)</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="#" onclick="location.reload(); return false;" class="btn">🔄 I Started the Backend - Check Connection</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Need More Help?</strong></p>
+            <p>Check these files in your project folder:</p>
+            <p>📄 🚀-START-BACKEND-HERE.md | 📄 ✅-BACKEND-CONNECTION-GUIDE.md</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">BTM Travel CRM v9.2.0 | Backend Setup Guide | Last Updated: November 1, 2025</p>
+        </div>
+    </div>
+</body>
+</html>

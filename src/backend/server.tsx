@@ -2,10 +2,13 @@
 // Pure Deno server - No Supabase dependencies
 import { getCollection, Collections, initializeDatabase, convertMongoDoc, convertMongoDocs, getMongoDb } from './mongodb.tsx';
 
+// Comprehensive CORS configuration for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+  'Access-Control-Expose-Headers': 'Content-Length, Content-Type',
+  'Access-Control-Max-Age': '86400', // 24 hours preflight cache
 };
 
 // Server version and startup timestamp
@@ -429,6 +432,26 @@ Deno.serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    }
+
+    // Debug CORS configuration
+    if (path === '/debug/cors' && req.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'CORS configuration is properly set up',
+          corsHeaders: {
+            'Access-Control-Allow-Origin': corsHeaders['Access-Control-Allow-Origin'],
+            'Access-Control-Allow-Methods': corsHeaders['Access-Control-Allow-Methods'],
+            'Access-Control-Allow-Headers': corsHeaders['Access-Control-Allow-Headers'],
+            'Access-Control-Expose-Headers': corsHeaders['Access-Control-Expose-Headers'],
+            'Access-Control-Max-Age': corsHeaders['Access-Control-Max-Age'],
+          },
+          note: 'All responses from this server include these CORS headers',
+          timestamp: new Date().toISOString()
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Debug endpoint to verify endpoints are loaded

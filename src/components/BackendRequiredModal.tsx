@@ -39,13 +39,19 @@ export function BackendRequiredModal() {
       }
     };
 
-    // Check immediately
-    checkAndShow();
+    // GRACE PERIOD: Wait 3 seconds before first check to give backend time to start
+    // This prevents the error from appearing immediately on page load
+    const initialCheckTimeout = setTimeout(() => {
+      checkAndShow();
+    }, 3000);
 
-    // Check every 5 seconds
+    // Check every 5 seconds after initial check
     const interval = setInterval(checkAndShow, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialCheckTimeout);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleRetry = async () => {
@@ -97,9 +103,10 @@ export function BackendRequiredModal() {
                 <p className="font-semibold text-blue-900 mb-2">🪟 Windows Users:</p>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
                   <li>Open your project folder</li>
-                  <li>Double-click the file: <code className="bg-blue-100 px-2 py-1 rounded font-mono">🔴-START-EVERYTHING.bat</code></li>
+                  <li>Double-click the file: <code className="bg-blue-100 px-2 py-1 rounded font-mono font-bold">🔴-START-BACKEND-FIXED.bat</code></li>
                   <li>Wait for "✅ MongoDB connected successfully"</li>
                   <li>Keep the window OPEN (don't close it!)</li>
+                  <li className="text-xs text-gray-600">Alternative: Use 🔴-START-EVERYTHING.bat</li>
                 </ol>
               </div>
 
@@ -108,10 +115,11 @@ export function BackendRequiredModal() {
                 <p className="font-semibold text-green-900 mb-2">🍎 Mac/Linux Users:</p>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
                   <li>Open Terminal in your project folder</li>
-                  <li>Run: <code className="bg-green-100 px-2 py-1 rounded font-mono">chmod +x 🔴-START-EVERYTHING.sh</code></li>
-                  <li>Then: <code className="bg-green-100 px-2 py-1 rounded font-mono">./🔴-START-EVERYTHING.sh</code></li>
+                  <li>Run: <code className="bg-green-100 px-2 py-1 rounded font-mono">chmod +x 🔴-START-BACKEND-FIXED.sh</code></li>
+                  <li>Then: <code className="bg-green-100 px-2 py-1 rounded font-mono font-bold">./🔴-START-BACKEND-FIXED.sh</code></li>
                   <li>Wait for "✅ MongoDB connected successfully"</li>
                   <li>Keep the terminal OPEN (don't close it!)</li>
+                  <li className="text-xs text-gray-600">Alternative: Use 🔴-START-EVERYTHING.sh</li>
                 </ol>
               </div>
 
@@ -182,8 +190,15 @@ export function BackendRequiredModal() {
 
           {/* Additional Help */}
           <div className="text-center pt-2 border-t">
-            <p className="text-sm text-gray-600">
-              Need more help? Check the file: <code className="bg-gray-100 px-2 py-1 rounded">⭐-DO-THIS-NOW.txt</code> in your project folder
+            <p className="text-sm text-gray-600 mb-2">
+              Need more help? Check these files in your project folder:
+            </p>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">🚀-START-BACKEND-HERE.md</code>
+              <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">✅-BACKEND-CONNECTION-GUIDE.md</code>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Comprehensive CORS headers configured ✅ | All endpoints include proper CORS support
             </p>
           </div>
         </div>
