@@ -1130,37 +1130,60 @@ export function AdminSettings() {
 
               {/* Backend Status Alert */}
               {!backendAvailable && (
-                <Alert className="border-2 border-red-500/50 bg-gradient-to-br from-red-50 to-orange-50">
-                  <Server className="w-5 h-5 text-red-600" />
-                  <AlertDescription className="space-y-4">
-                    <div>
-                      <p className="font-semibold text-red-900 mb-2">⚠️ Backend Server Not Running</p>
-                      <p className="text-sm text-red-800">
-                        User management requires MongoDB backend connection. Please start the backend server to manage users.
+                <Alert className="border-4 border-red-600 bg-gradient-to-br from-red-100 via-orange-50 to-red-100 shadow-xl animate-pulse">
+                  <Server className="w-6 h-6 text-red-600" />
+                  <AlertDescription className="space-y-5">
+                    <div className="space-y-3">
+                      <p className="text-xl font-bold text-red-900">🚨 BACKEND SERVER NOT RUNNING!</p>
+                      <p className="font-semibold text-red-800 text-base">
+                        The MongoDB backend server is offline. You must start it to use the CRM.
                       </p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <div className="flex-1 bg-black/5 rounded-lg p-3 space-y-2">
-                        <p className="text-xs font-semibold text-red-900">Windows:</p>
-                        <code className="text-xs bg-black/10 px-2 py-1 rounded block">
-                          START-BACKEND-SIMPLE.bat
-                        </code>
-                      </div>
-                      <div className="flex-1 bg-black/5 rounded-lg p-3 space-y-2">
-                        <p className="text-xs font-semibold text-red-900">Mac/Linux:</p>
-                        <code className="text-xs bg-black/10 px-2 py-1 rounded block">
-                          ./START-BACKEND-SIMPLE.sh
-                        </code>
+                      <div className="bg-red-900 text-white p-4 rounded-lg">
+                        <p className="font-mono text-sm">
+                          [ADMIN] ❌ Backend not available - user management requires MongoDB connection
+                        </p>
                       </div>
                     </div>
-                    <Button 
-                      onClick={loadSettings}
-                      variant="outline"
-                      className="w-full border-red-300 bg-white hover:bg-red-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Retry Connection
-                    </Button>
+                    
+                    <div className="bg-white/80 p-4 rounded-lg border-2 border-red-300">
+                      <p className="font-bold text-red-900 mb-3 text-lg">✅ QUICK FIX:</p>
+                      <div className="space-y-3">
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border-2 border-blue-300">
+                          <p className="font-bold text-blue-900 mb-2">🪟 Windows Users:</p>
+                          <p className="text-sm text-gray-700 mb-2">Double-click this file in your project folder:</p>
+                          <code className="bg-blue-900 text-yellow-300 px-3 py-2 rounded block font-bold text-base">
+                            🔴-START-EVERYTHING.bat
+                          </code>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 border-2 border-green-300">
+                          <p className="font-bold text-green-900 mb-2">🍎 Mac/Linux Users:</p>
+                          <p className="text-sm text-gray-700 mb-2">Run in terminal:</p>
+                          <code className="bg-green-900 text-yellow-300 px-3 py-2 rounded block font-bold text-base">
+                            chmod +x 🔴-START-EVERYTHING.sh && ./🔴-START-EVERYTHING.sh
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-100 border-2 border-yellow-500 p-4 rounded-lg">
+                      <p className="font-bold text-yellow-900 mb-2">⚠️ IMPORTANT:</p>
+                      <ul className="list-disc list-inside text-sm text-yellow-900 space-y-1">
+                        <li>Keep the terminal/command window OPEN while using the CRM</li>
+                        <li>Wait for "✅ MongoDB connected successfully" message</li>
+                        <li>Then click "Retry Connection" button below</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={loadSettings}
+                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-base py-6"
+                      >
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                        Retry Connection
+                      </Button>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}

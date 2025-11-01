@@ -1,0 +1,17 @@
+{
+  "name": "btm-travel-crm",
+  "version": "1.0.0",
+  "description": "BTM Travel CRM with MongoDB Backend",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite",
+    "dev:backend": "cd backend && deno run --allow-net --allow-env --allow-read --allow-write server.tsx",
+    "start": "npm run dev",
+    "backend": "cd backend && deno run --allow-net --allow-env --allow-read --allow-write server.tsx",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

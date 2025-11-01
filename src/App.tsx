@@ -18,6 +18,7 @@ import { Badge } from "./components/ui/badge";
 import { useEffect } from "react";
 import { BACKEND_URL } from "./utils/config";
 import { OfflineModeIndicator } from "./components/OfflineModeIndicator";
+import { BackendRequiredModal } from "./components/BackendRequiredModal";
 
 function AppContent() {
   const { currentUser, logout, isAdmin } = useUser();
@@ -97,6 +98,7 @@ function AppContent() {
   if (!currentUser) {
     return (
       <>
+        <BackendRequiredModal />
         <Login />
       </>
     );

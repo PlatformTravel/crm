@@ -1,0 +1,52 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║  ⚠️  BACKEND SERVER IS NOT RUNNING  ⚠️                           ║
+║                                                                  ║
+║  You're seeing this error:                                       ║
+║  "Backend not available - user management requires MongoDB"      ║
+║                                                                  ║
+║  SOLUTION:                                                       ║
+║                                                                  ║
+║  1. Open a new terminal/command prompt window                    ║
+║                                                                  ║
+║  2. Double-click ONE of these files:                             ║
+║                                                                  ║
+║     Windows: 🔴-START-EVERYTHING.bat                             ║
+║     Mac/Linux: 🔴-START-EVERYTHING.sh                            ║
+║                                                                  ║
+║  3. Wait 30 seconds for "✅ MongoDB connected"                   ║
+║                                                                  ║
+║  4. Go back to your browser and refresh                          ║
+║                                                                  ║
+║  5. The error will be gone!                                      ║
+║                                                                  ║
+║  ⚠️  KEEP THE TERMINAL WINDOW OPEN!                              ║
+║     Closing it = Backend stops = Error returns                   ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+QUICK COMMAND (Alternative):
+
+Windows:
+  cd backend
+  deno run --allow-net --allow-env --allow-read --allow-write server.tsx
+
+Mac/Linux:
+  cd backend
+  deno run --allow-net --allow-env --allow-read --allow-write server.tsx
+
+═══════════════════════════════════════════════════════════════════
+
+WHAT YOU'LL SEE WHEN IT WORKS:
+
+  [MongoDB] Connecting to database...
+  [MongoDB] ✅ Connected successfully and verified
+  🚀 Server running on http://localhost:8000
+  
+  🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢
+  🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅
+  🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢
+
+═══════════════════════════════════════════════════════════════════
+
+That's it! No more error. Start working! 🎉
