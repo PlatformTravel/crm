@@ -6,11 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from "./ui/drawer";
+import { Separator } from "./ui/separator";
+import { ScrollArea } from "./ui/scroll-area";
 import { toast } from "sonner@2.0.3";
-import { Phone, Star, CheckCircle, FileText, Search, Calendar, X, Sparkles, Target } from "lucide-react";
+import { Phone, Star, CheckCircle, Search, Calendar, X, Sparkles, Target, Eye, Info } from "lucide-react";
 import { backendService } from "../utils/backendService";
 import { useUser } from "./UserContext";
 import { useThreeCX } from "./ThreeCXContext";
+import { useIsMobile } from "./ui/use-mobile";
 
 interface SpecialAssignment {
   id: string;
@@ -31,11 +35,12 @@ interface SpecialAssignment {
 export function SpecialNumbers() {
   const { currentUser } = useUser();
   const { makeCall } = useThreeCX();
+  const isMobile = useIsMobile();
   const [assignments, setAssignments] = useState<SpecialAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssignment, setSelectedAssignment] = useState<SpecialAssignment | null>(null);
-  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [callNotes, setCallNotes] = useState("");
   const [isCompletingCall, setIsCompletingCall] = useState(false);
 
@@ -50,9 +55,9 @@ export function SpecialNumbers() {
       setIsLoading(true);
       const data = await backendService.getAssignments(currentUser.id);
       
-      // Filter only special assignments (not yet called)
+      // Filter only special assignments (include both pending and completed for accurate counts)
       const specialAssignments = (data.assignments || [])
-        .filter((a: any) => a.type === 'special' && !a.called)
+        .filter((a: any) => a.type === 'special')
         .map((a: any) => ({
           id: a.id,
           phoneNumber: a.phoneNumber,
@@ -75,13 +80,19 @@ export function SpecialNumbers() {
     }
   };
 
-  const handleCall = (assignment: SpecialAssignment) => {
+  const handleViewDetails = (assignment: SpecialAssignment) => {
     setSelectedAssignment(assignment);
     setCallNotes("");
-    setIsCallDialogOpen(true);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleCallFromDetails = () => {
+    if (!selectedAssignment) return;
     
-    // Make the call via 3CX
-    makeCall(assignment.phoneNumber);
+    // Make the call via 3CX only
+    makeCall(selectedAssignment.phoneNumber);
+    
+    toast.success('Call initiated via 3CX!');
   };
 
   const handleCompleteCall = async () => {
@@ -93,7 +104,7 @@ export function SpecialNumbers() {
       await backendService.completeSpecialCall(selectedAssignment.id, callNotes);
       
       toast.success('Call completed and number archived!');
-      setIsCallDialogOpen(false);
+      setIsDetailsDialogOpen(false);
       setSelectedAssignment(null);
       setCallNotes("");
       
@@ -236,12 +247,13 @@ export function SpecialNumbers() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
-                          onClick={() => handleCall(assignment)}
+                          onClick={() => handleViewDetails(assignment)}
                           size="sm"
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                          variant="outline"
+                          className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
                         >
-                          <Phone className="w-4 h-4 mr-1" />
-                          Call Now
+                          <Eye className="w-4 h-4 mr-1" />
+                          Details
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -253,76 +265,235 @@ export function SpecialNumbers() {
         </CardContent>
       </Card>
 
-      {/* Call Completion Dialog */}
-      <Dialog open={isCallDialogOpen} onOpenChange={setIsCallDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-purple-600" />
-              Complete Call
-            </DialogTitle>
-            <DialogDescription>
-              Mark this special number as called and add your notes
-            </DialogDescription>
-          </DialogHeader>
+      {/* Details Dialog/Drawer - Responsive */}
+      {isMobile ? (
+        <Drawer open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-purple-600" />
+                Special Number Details
+              </DrawerTitle>
+              <DrawerDescription>
+                Review details and initiate call for this special assignment
+              </DrawerDescription>
+            </DrawerHeader>
 
-          {selectedAssignment && (
-            <div className="space-y-4">
-              {/* Assignment Details */}
-              <div className="bg-purple-50 p-4 rounded-lg space-y-2">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-purple-600" />
-                  <span className="font-mono font-semibold">{selectedAssignment.phoneNumber}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-purple-600" />
-                  <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
-                    {selectedAssignment.purpose}
-                  </Badge>
-                </div>
-                {selectedAssignment.notes && (
-                  <div className="flex gap-2 mt-2 pt-2 border-t border-purple-200">
-                    <FileText className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-gray-600">{selectedAssignment.notes}</p>
+            <ScrollArea className="max-h-[60vh] px-4">
+              {selectedAssignment && (
+                <div className="space-y-4 pb-4">
+                  {/* Assignment Information */}
+                  <div className="space-y-3">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg border-2 border-purple-200">
+                      <div className="space-y-2.5">
+                        {/* Phone Number */}
+                        <div>
+                          <div className="text-xs text-gray-600 mb-1">Phone Number</div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                            <span className="font-mono font-bold text-purple-900 text-sm break-all">
+                              {selectedAssignment.phoneNumber}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Separator className="bg-purple-200" />
+
+                        {/* Purpose */}
+                        <div>
+                          <div className="text-xs text-gray-600 mb-1.5">Purpose</div>
+                          <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-xs px-2 py-0.5">
+                            {selectedAssignment.purpose}
+                          </Badge>
+                        </div>
+
+                        {/* Assignment Date */}
+                        <div>
+                          <div className="text-xs text-gray-600 mb-1">Assigned Date</div>
+                          <div className="flex items-center gap-1.5 text-gray-700 text-sm">
+                            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="text-xs">{new Date(selectedAssignment.assignedAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notes Section */}
+                    {selectedAssignment.notes && (
+                      <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <div className="text-xs font-medium text-amber-900 mb-1">Important Notes</div>
+                            <p className="text-xs text-amber-800">{selectedAssignment.notes}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Call Notes */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Call Notes (Optional)</label>
-                <Textarea
-                  placeholder="Add any notes about this call..."
-                  value={callNotes}
-                  onChange={(e) => setCallNotes(e.target.value)}
-                  rows={4}
-                  className="resize-none"
-                />
-              </div>
+                  {/* Call Notes - Always visible */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-700">Call Notes (Optional)</label>
+                    <Textarea
+                      placeholder="Add any notes about this call..."
+                      value={callNotes}
+                      onChange={(e) => setCallNotes(e.target.value)}
+                      rows={3}
+                      className="resize-none text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
 
-              {/* Actions */}
-              <div className="flex gap-2 justify-end">
+            <DrawerFooter>
+              <div className="grid grid-cols-2 gap-2 w-full">
                 <Button
+                  onClick={handleCallFromDetails}
                   variant="outline"
-                  onClick={() => setIsCallDialogOpen(false)}
-                  disabled={isCompletingCall}
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Cancel
+                  <Phone className="w-4 h-4 mr-1" />
+                  Call Now
                 </Button>
                 <Button
                   onClick={handleCompleteCall}
                   disabled={isCompletingCall}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
-                  {isCompletingCall ? 'Completing...' : 'Complete Call'}
+                  {isCompletingCall ? 'Completing...' : 'Complete'}
                 </Button>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+              <DrawerClose asChild>
+                <Button variant="outline" className="w-full">
+                  <X className="w-4 h-4 mr-1" />
+                  Close
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-purple-600" />
+                Special Number Details
+              </DialogTitle>
+              <DialogDescription>
+                Review details and initiate call for this special assignment
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedAssignment && (
+              <div className="space-y-6">
+                {/* Assignment Information */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
+                    <div className="space-y-3">
+                      {/* Phone Number */}
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Phone Number</div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-purple-600" />
+                          <span className="font-mono text-lg font-bold text-purple-900">
+                            {selectedAssignment.phoneNumber}
+                          </span>
+                        </div>
+                      </div>
+
+                      <Separator className="bg-purple-200" />
+
+                      {/* Purpose */}
+                      <div>
+                        <div className="text-sm text-gray-600 mb-2">Purpose</div>
+                        <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-sm px-3 py-1">
+                          {selectedAssignment.purpose}
+                        </Badge>
+                      </div>
+
+                      {/* Assignment Date */}
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Assigned Date</div>
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Calendar className="w-4 h-4" />
+                          <span>{new Date(selectedAssignment.assignedAt).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes Section */}
+                  {selectedAssignment.notes && (
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                      <div className="flex items-start gap-2">
+                        <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-amber-900 mb-1">Important Notes</div>
+                          <p className="text-sm text-amber-800">{selectedAssignment.notes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Call Notes - Always visible */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Call Notes (Optional)</label>
+                  <Textarea
+                    placeholder="Add any notes about this call..."
+                    value={callNotes}
+                    onChange={(e) => setCallNotes(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 justify-end pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDetailsDialogOpen(false)}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Close
+                  </Button>
+                  <Button
+                    onClick={handleCallFromDetails}
+                    variant="outline"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Phone className="w-4 h-4 mr-1" />
+                    Call Now
+                  </Button>
+                  <Button
+                    onClick={handleCompleteCall}
+                    disabled={isCompletingCall}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    {isCompletingCall ? 'Completing...' : 'Complete Call'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+
+
     </div>
   );
 }

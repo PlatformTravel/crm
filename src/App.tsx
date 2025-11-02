@@ -20,6 +20,7 @@ import { useEffect } from "react";
 import { BACKEND_URL } from "./utils/config";
 import { OfflineModeIndicator } from "./components/OfflineModeIndicator";
 import { BackendRequiredModal } from "./components/BackendRequiredModal";
+import { AgentProgressCard } from "./components/AgentProgressCard";
 
 function AppContent() {
   const { currentUser, logout, isAdmin } = useUser();
@@ -461,6 +462,11 @@ function AppContent() {
       <OfflineModeIndicator />
 
       <div className="container mx-auto px-3 sm:px-6 py-6 sm:py-10">
+        {/* Agent Progress Card */}
+        <div className="mb-6">
+          <AgentProgressCard />
+        </div>
+
         {/* Agent Classic View - Original Tabs Interface */}
         <Tabs defaultValue="client" className="space-y-6 sm:space-y-8">
             <TabsList className="grid w-full grid-cols-4 sm:w-[800px] h-12 sm:h-14 p-1 sm:p-1.5 bg-white border-2 border-gray-200 shadow-xl rounded-lg sm:rounded-xl">

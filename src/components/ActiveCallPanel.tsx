@@ -84,35 +84,35 @@ export function ActiveCallPanel() {
 
   return (
     <div className="fixed bottom-6 right-6 animate-in slide-in-from-bottom-5" style={{ zIndex: 10000 }}>
-      <Card className="bg-white/95 backdrop-blur-xl border-2 border-white/40 shadow-2xl w-[450px] rounded-2xl overflow-hidden">
+      <Card className="bg-white/95 backdrop-blur-xl border-2 border-white/40 shadow-2xl w-[360px] rounded-xl overflow-hidden">
         {/* Status Header - Full Width */}
-        <div className={`${getStatusColor()} text-white px-6 py-3 shadow-lg`}>
+        <div className={`${getStatusColor()} text-white px-4 py-2.5 shadow-lg`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Phone className="w-5 h-5" />
-              <span className="text-lg font-semibold">{getStatusText()}</span>
+              <Phone className="w-4 h-4" />
+              <span className="font-semibold">{getStatusText()}</span>
             </div>
             {isConnected && (
-              <div className="flex items-center gap-1.5 text-lg font-mono">
-                <Clock className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 font-mono">
+                <Clock className="w-3.5 h-3.5" />
                 {formatDuration(duration)}
               </div>
             )}
           </div>
         </div>
 
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-4 space-y-3">
           {/* Contact Info */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             {activeCall.contactName && (
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-violet-600" />
-                <span className="text-xl font-semibold text-gray-900">{activeCall.contactName}</span>
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-violet-600" />
+                <span className="font-semibold text-gray-900">{activeCall.contactName}</span>
               </div>
             )}
-            <div className="flex items-center gap-3 text-gray-700 bg-slate-100 p-3 rounded-lg border">
-              <Phone className="w-4 h-4" />
-              <span className="text-lg font-mono flex-1 select-all">{activeCall.phoneNumber}</span>
+            <div className="flex items-center gap-2 text-gray-700 bg-slate-100 p-2 rounded-lg border">
+              <Phone className="w-3.5 h-3.5" />
+              <span className="font-mono flex-1 select-all text-sm">{activeCall.phoneNumber}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -132,7 +132,7 @@ export function ActiveCallPanel() {
                     console.error("Copy failed", err);
                   }
                 }}
-                className="h-8 px-2"
+                className="h-7 px-2"
                 title="Copy phone number"
               >
                 <Copy className="w-3 h-3" />
@@ -141,49 +141,49 @@ export function ActiveCallPanel() {
           </div>
 
           {/* Call Controls */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
+          <div className="grid grid-cols-3 gap-2 pt-1">
             {/* Mute/Unmute */}
             <Button
               variant="outline"
-              size="lg"
+              size="sm"
               onClick={isMuted ? unmuteCall : muteCall}
               disabled={!isConnected}
-              className={`h-14 ${
+              className={`h-12 ${
                 isMuted 
                   ? 'bg-red-100 border-red-300 text-red-700 hover:bg-red-200' 
                   : 'bg-white hover:bg-gray-100'
               }`}
             >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </Button>
 
             {/* Hold/Resume */}
             <Button
               variant="outline"
-              size="lg"
+              size="sm"
               onClick={isOnHold ? resumeCall : holdCall}
               disabled={!isConnected}
-              className={`h-14 ${
+              className={`h-12 ${
                 isOnHold 
                   ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
                   : 'bg-white hover:bg-gray-100'
               }`}
             >
-              {isOnHold ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+              {isOnHold ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
             </Button>
 
             {/* End Call */}
             <Button
-              size="lg"
+              size="sm"
               onClick={endCall}
-              className="h-14 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+              className="h-12 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
             >
-              <PhoneOff className="w-5 h-5" />
+              <PhoneOff className="w-4 h-4" />
             </Button>
           </div>
 
           {/* Quick Actions Hint */}
-          <div className="text-sm text-center text-gray-500 pt-2">
+          <div className="text-xs text-center text-gray-500 pt-1">
             {isConnected ? (
               <span>Call in progress - Don't forget to log call notes</span>
             ) : (
