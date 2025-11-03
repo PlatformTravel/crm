@@ -14,4 +14,5 @@ RUN deno cache server.tsx
 EXPOSE 8000
 
 # Run your Deno app
-CMD ["run", "--allow-net", "--allow-env", "server.tsx"]
+CMD ["run", "--allow-net", "--allow-env", "--allow-sys", "--allow-read", "server.tsx"]
+
