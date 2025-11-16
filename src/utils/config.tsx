@@ -10,7 +10,7 @@
 //    OR: ./start.sh (Mac/Linux)
 //    OR: start.bat (Windows)
 //
-export const BACKEND_URL = 'http://localhost:8000';
+export const BACKEND_URL = 'https://crm-backend-aqtu.onrender.com';
 
 // For production, replace with your deployed backend URL:
 // export const BACKEND_URL = 'https://your-app.deno.dev';

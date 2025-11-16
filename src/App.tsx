@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { ClientCRM } from "./components/ClientCRM";
 import { PromoSales } from "./components/PromoSales";
@@ -16,7 +16,6 @@ import { ActiveCallPanel } from "./components/ActiveCallPanel";
 import { Login } from "./components/Login";
 import { Button } from "./components/ui/button";
 import { Badge } from "./components/ui/badge";
-import { useEffect } from "react";
 import { BACKEND_URL } from "./utils/config";
 import { OfflineModeIndicator } from "./components/OfflineModeIndicator";
 import { BackendRequiredModal } from "./components/BackendRequiredModal";
@@ -50,7 +49,6 @@ function AppContent() {
           cache: 'no-cache',
         });
         
-        console.log(`[App.tsx] ✅ Backend responded with status: ${response.status}`);
         
         if (response.ok) {
           const data = await response.json();
