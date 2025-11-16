@@ -13,4 +13,4 @@ RUN deno cache server.tsx
 EXPOSE 8000
 
 # Start server
-CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "server.tsx"]
+CMD ["deno", "run", "--allow-net", "--allow-env",   "--allow-sys=osRelease,systemMemoryInfo", "--allow-read", "server.tsx"]
