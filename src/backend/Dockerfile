@@ -1,17 +1,16 @@
-# Use the official lightweight Deno image
+# Use official Deno Alpine image
 FROM denoland/deno:alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy all backend files (including .env)
+# Copy only source files (NOT .env)
 COPY . .
 
-# Cache dependencies (optional, improves build time)
+# Cache dependencies
 RUN deno cache server.tsx
 
-# Expose the app port (Render dynamically sets PORT)
+# Render sets PORT automatically — do not hardcode
 EXPOSE 8000
 
-# Run your Deno app with appropriate permissions
-CMD ["deno", "run", "--allow-net", "--allow-env", "--env-file", ".env", "--allow-sys", "--allow-read", "server.tsx"]
+# Start server
+CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "server.tsx"]

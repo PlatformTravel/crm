@@ -1,6 +1,11 @@
 // MongoDB Connection Utility for BTM Travel CRM
 import { MongoClient, Db, Collection } from 'npm:mongodb@6.3.0';
-import { config } from './config.tsx';  
+// import { config } from './config.tsx';  
+export const config = {
+  MONGODB_URI: Deno.env.get("MONGODB_URI"),
+  FRONTEND_URL: Deno.env.get("FRONTEND_URL"),
+};
+
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 let connectionAttempts = 0;
