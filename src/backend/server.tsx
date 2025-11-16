@@ -14,33 +14,33 @@ const corsHeaders = {
 // Server version and startup timestamp
 const SERVER_VERSION = '9.3.0-ASSIGNMENTS-FIX';
 const SERVER_STARTED = new Date().toISOString();
-console.log('\n\n\n');
-console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-console.log('🟢                                                         🟢');
-console.log('🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅          🟢');
-console.log('🟢  VERSION: 9.3.0 - ASSIGNMENTS ENDPOINT ADDED!          🟢');
-console.log('🟢                                                         🟢');
-console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-console.log('');
-console.log('═══════════════════════════════════════════════════════════');
-console.log('📅 Server started:', SERVER_STARTED);
-console.log('✅ ALL 54+ endpoints loaded and verified');
-console.log('✅ User Management: /users, /users/login, /login-audit');
-console.log('✅ Manager endpoints (BEFORE MongoDB check):');
-console.log('   - /team-performance ✅');
-console.log('   - /agent-monitoring/overview ✅');
-console.log('   - /database/clients ✅');
-console.log('   - /database/customers ✅');
-console.log('✅ Admin endpoints: /database/reset-all, /cron/daily-archive');
-console.log('✅ Customer endpoints: All CRUD operations ready');
-console.log('✅ Email endpoints: /email-recipients ready');
-console.log('✅ Archive endpoints: /customers/archived ready');
-console.log('═══════════════════════════════════════════════════════════');
-console.log('🔥 CRITICAL FIX: GET /assignments endpoint added!');
-console.log('   Special Numbers now load correctly in Agent portal');
-console.log('   All assignment types (client, customer, special) working');
-console.log('═══════════════════════════════════════════════════════════');
-console.log('\n');
+// console.log('\n\n\n');
+// console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
+// console.log('🟢                                                         🟢');
+// console.log('🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅          🟢');
+// console.log('🟢  VERSION: 9.3.0 - ASSIGNMENTS ENDPOINT ADDED!          🟢');
+// console.log('🟢                                                         🟢');
+// console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
+// console.log('');
+// console.log('═══════════════════════════════════════════════════════════');
+// console.log('📅 Server started:', SERVER_STARTED);
+// console.log('✅ ALL 54+ endpoints loaded and verified');
+// console.log('✅ User Management: /users, /users/login, /login-audit');
+// console.log('✅ Manager endpoints (BEFORE MongoDB check):');
+// console.log('   - /team-performance ✅');
+// console.log('   - /agent-monitoring/overview ✅');
+// console.log('   - /database/clients ✅');
+// console.log('   - /database/customers ✅');
+// console.log('✅ Admin endpoints: /database/reset-all, /cron/daily-archive');
+// console.log('✅ Customer endpoints: All CRUD operations ready');
+// console.log('✅ Email endpoints: /email-recipients ready');
+// console.log('✅ Archive endpoints: /customers/archived ready');
+// console.log('═══════════════════════════════════════════════════════════');
+// console.log('🔥 CRITICAL FIX: GET /assignments endpoint added!');
+// console.log('   Special Numbers now load correctly in Agent portal');
+// console.log('   All assignment types (client, customer, special) working');
+// console.log('═══════════════════════════════════════════════════════════');
+// console.log('\n');
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -4647,6 +4647,13 @@ Deno.serve({ port: 8000 }, async (req) => {
         const specialDbCollection = await getCollection(Collections.SPECIAL_DATABASE);
         const numbers = await specialDbCollection.find({}).sort({ uploadedAt: -1 }).toArray();
         
+        console.log(`[SPECIAL DATABASE] Found ${numbers.length} numbers in database`);
+        console.log(`[SPECIAL DATABASE] Status breakdown:`, {
+          available: numbers.filter(n => n.status === 'available').length,
+          assigned: numbers.filter(n => n.status === 'assigned').length,
+          archived: numbers.filter(n => n.status === 'archived').length
+        });
+        
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -4879,6 +4886,8 @@ Deno.serve({ port: 8000 }, async (req) => {
         const archiveCollection = await getCollection(Collections.SPECIAL_DATABASE_ARCHIVE);
         const archived = await archiveCollection.find({}).sort({ completedAt: -1 }).toArray();
         
+        console.log(`[SPECIAL DATABASE] Found ${archived.length} archived numbers`);
+        
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -4908,6 +4917,8 @@ Deno.serve({ port: 8000 }, async (req) => {
         const body = await req.json();
         const { numberIds } = body;
         
+        console.log('[SPECIAL DATABASE] Attempting to recycle IDs:', numberIds);
+        
         if (!numberIds || !Array.isArray(numberIds) || numberIds.length === 0) {
           return new Response(
             JSON.stringify({ success: false, error: 'Number IDs are required' }),
@@ -4922,6 +4933,8 @@ Deno.serve({ port: 8000 }, async (req) => {
         const archivedNumbers = await archiveCollection.find({ 
           id: { $in: numberIds }
         }).toArray();
+        
+        console.log(`[SPECIAL DATABASE] Found ${archivedNumbers.length} archived numbers to recycle`);
         
         if (archivedNumbers.length === 0) {
           return new Response(
@@ -4942,12 +4955,17 @@ Deno.serve({ port: 8000 }, async (req) => {
           recycledAt: new Date().toISOString()
         }));
         
+        console.log('[SPECIAL DATABASE] Inserting restored numbers:', restoredNumbers.map(n => n.phoneNumber));
         await specialDbCollection.insertMany(restoredNumbers);
         
         // Remove from archive
-        await archiveCollection.deleteMany({ id: { $in: numberIds } });
+        const deleteResult = await archiveCollection.deleteMany({ id: { $in: numberIds } });
+        console.log(`[SPECIAL DATABASE] Removed ${deleteResult.deletedCount} numbers from archive`);
         
-        console.log(`[SPECIAL DATABASE] Recycled ${restoredNumbers.length} numbers back to database`);
+        // Verify counts after operation
+        const totalInDb = await specialDbCollection.countDocuments();
+        const totalInArchive = await archiveCollection.countDocuments();
+        console.log(`[SPECIAL DATABASE] After recycle - DB: ${totalInDb}, Archive: ${totalInArchive}`);
         
         return new Response(
           JSON.stringify({ 

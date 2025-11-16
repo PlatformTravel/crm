@@ -21,7 +21,7 @@ export async function getMongoDb(): Promise<Db> {
   }
 
   // Hardcoded MongoDB connection string with optimized timeouts
-  const MONGODB_URI = 'mongodb+srv://crm_db_user:y7eShqCFNoyfSLPb@cluster0.vlklc6c.mongodb.net/btm_travel_crm?retryWrites=true&w=majority&connectTimeoutMS=45000&serverSelectionTimeoutMS=45000';
+  const MONGODB_URI = process.env.MONGODB_URI;
 
   console.log(`[MongoDB] Connecting to database (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})...`);
 
@@ -48,7 +48,7 @@ export async function getMongoDb(): Promise<Db> {
     console.log('[MongoDB] ✅ Connected successfully and verified');
 
     return cachedDb;
-  } catch (error) {
+  } catch (error:any) {
     console.error(`[MongoDB] ❌ Connection failed (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS}):`, error.message);
     // Reset cache so next attempt will retry
     cachedClient = null;
@@ -78,7 +78,7 @@ export async function getCollection<T = any>(collectionName: string): Promise<Co
     try {
       const db = await getMongoDb();
       return db.collection<T>(collectionName);
-    } catch (error) {
+    } catch (error:any) {
       lastError = error;
       console.error(`[MongoDB] Connection attempt ${attempt}/3 failed:`, error);
       
