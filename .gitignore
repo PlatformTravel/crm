@@ -10,7 +10,7 @@ yarn.lock
 
 # Deno
 /.deno/
-src/backend/.env
+
 # Environment files
 .env
 
