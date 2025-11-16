@@ -1,1 +1,42 @@
-node_modules
+# Node.js
+/node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+package-lock.json
+yarn.lock
+/.pnp
+.pnp.js
+
+# Deno
+/.deno/
+
+# Environment files
+.env
+
+# Build output
+/dist
+/build
+/.next
+/out
+/public
+
+# Logs
+/logs
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Temporary or cache directories
+/.cache
+/.npm
+/.yarn
+
+# Others
+*.log
+*.bak

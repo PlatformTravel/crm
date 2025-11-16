@@ -52,7 +52,7 @@ function AppContent() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('[App.tsx] Backend data:', data);
+   
           
           // Accept any of these as "connected"
           if (data.status === 'ok' || 
