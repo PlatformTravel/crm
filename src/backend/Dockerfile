@@ -7,10 +7,10 @@ WORKDIR /app
 COPY . .
 
 # Cache dependencies
-RUN deno cache server.tsx
+RUN deno cache src/backend/server.tsx
 
 # Render sets PORT automatically — do not hardcode
 EXPOSE 8000
 
 # Start server
-CMD ["deno", "run", "--allow-net", "--allow-env",   "--allow-sys=osRelease,systemMemoryInfo", "--allow-read", "server.tsx"]
+CMD ["deno", "run", "--allow-net", "--allow-env",   "--allow-sys=osRelease,systemMemoryInfo", "--allow-read", "src/backend/server.tsx"]

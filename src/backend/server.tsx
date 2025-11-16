@@ -122,27 +122,6 @@ console.log('🔧 Starting MongoDB initialization in background...');
   }
 })();
 
-// Start HTTP server immediately (don't wait for MongoDB)
-// console.log('═══════════════════════════════════════════════════════════');
-// console.log('🚀 BTM Travel CRM Server running on MongoDB!');
-// console.log('═══════════════════════════════════════════════════════════');
-// console.log(`📌 Version: ${SERVER_VERSION}`);
-// console.log('🌐 Port: 8000');
-// console.log('🔗 Manager Operations: ✅ ALL LOADED');
-// console.log('   - GET    /team-performance (Full team metrics)');
-// console.log('   - GET    /agent-monitoring/overview');
-// console.log('   - GET    /agent-monitoring/agent/:id');
-// console.log('🔗 Call Progress & Recycling: ✅ NEW!');
-// console.log('   - GET    /call-progress');
-// console.log('   - POST   /call-progress/recycle');
-// console.log('   - POST   /call-progress/archive-completed');
-// console.log('   - POST   /call-progress/recycle-agent');
-// console.log('🔗 Customer Endpoints: ✅ LOADED');
-// console.log('   - GET    /database/customers/assigned/:id');
-// console.log('   - DELETE /customers/clear');
-// console.log('   - GET    /customers/archived');
-// console.log('   - POST   /customers/archived');
-// console.log('═══════════════════════════════════════════════════════════');
 
 Deno.serve({ port: 8000 }, async (req) => {
   // Handle CORS preflight
