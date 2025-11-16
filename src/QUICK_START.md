@@ -1,4 +1,4 @@
-# ⚡ Quick Start - BTM Travel CRM
+<!-- # ⚡ Quick Start - BTM Travel CRM
 
 ## 🚀 Get Running in 2 Minutes!
 
@@ -117,4 +117,4 @@ Check `/utils/config.tsx` - should be `http://localhost:8000` for local dev
 
 ---
 
-**🎊 Happy CRM-ing!**
+**🎊 Happy CRM-ing!** -->

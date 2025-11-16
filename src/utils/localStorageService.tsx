@@ -49,7 +49,7 @@ function initializeDefaultUsers() {
     const defaultAdmin = {
       id: 'admin_default',
       username: 'admin',
-      password: 'admin123', // In production, this should be hashed
+      password: 'admin123', 
       name: 'Administrator',
       email: 'admin@btmtravel.net',
       role: 'admin',

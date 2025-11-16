@@ -1,4 +1,4 @@
-# 🎯 START HERE - MongoDB Backend Complete!
+<!-- # 🎯 START HERE - MongoDB Backend Complete!
 
 ## ✅ Your Backend is 100% Ready to Deploy!
 
@@ -179,4 +179,4 @@ All your CRM features powered by MongoDB!
 
 ---
 
-*Built with ❤️ using MongoDB, Deno, and React*
+*Built with ❤️ using MongoDB, Deno, and React* -->

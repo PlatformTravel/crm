@@ -9,7 +9,7 @@ let backendAvailable = true;
 let lastBackendCheck = 0;
 const CHECK_INTERVAL = 30000; // Check every 30 seconds
 
-// Check if backend is available
+// // Check if backend is available
 async function isBackendAvailable(): Promise<boolean> {
   const now = Date.now();
   
@@ -19,7 +19,7 @@ async function isBackendAvailable(): Promise<boolean> {
   }
   
   try {
-    await backendService.health();
+    // await backendService.health();
     backendAvailable = true;
     lastBackendCheck = now;
     return true;

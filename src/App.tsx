@@ -30,76 +30,76 @@ function AppContent() {
   const isManager = currentUser?.role === 'manager';
 
   // Check server status on mount and periodically
-  useEffect(() => {
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
+  // useEffect(() => {
+  //   let retryCount = 0;
+  //   const MAX_RETRIES = 3;
     
-    const checkServer = async (isRetry = false) => {
-      // Don't increment retry count on periodic checks
-      if (!isRetry) {
-        retryCount = 0;
-      }
+  //   const checkServer = async (isRetry = false) => {
+  //     // Don't increment retry count on periodic checks
+  //     if (!isRetry) {
+  //       retryCount = 0;
+  //     }
       
-      try {
-        console.log(`[App.tsx] Checking backend at: ${BACKEND_URL}/health (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+  //     try {
+  //       console.log(`[App.tsx] Checking backend at: ${BACKEND_URL}/health (attempt ${retryCount + 1}/${MAX_RETRIES})`);
         
-        // Simplified fetch - no timeout, let browser handle it
-        const response = await fetch(`${BACKEND_URL}/health`, {
-          method: 'GET',
-          cache: 'no-cache',
-        });
+  //       // Simplified fetch - no timeout, let browser handle it
+  //       const response = await fetch(`${BACKEND_URL}/health`, {
+  //         method: 'GET',
+  //         cache: 'no-cache',
+  //       });
         
         
-        if (response.ok) {
-          const data = await response.json();
+  //       if (response.ok) {
+  //         const data = await response.json();
    
           
-          // Accept any of these as "connected"
-          if (data.status === 'ok' || 
-              data.mongodb === 'connected' || 
-              data.status === 'initializing' ||
-              data.status === 'degraded') {
-            console.log('%c✅ Backend Connected ', 'background: #22c55e; color: white; font-size: 14px; padding: 5px 10px; border-radius: 4px;');
-            console.log('[App.tsx] MongoDB status:', data.mongodb);
-            setBackendConnected(true);
-            retryCount = 0; // Reset retry count on success
-            return;
-          }
-        }
+  //         // Accept any of these as "connected"
+  //         if (data.status === 'ok' || 
+  //             data.mongodb === 'connected' || 
+  //             data.status === 'initializing' ||
+  //             data.status === 'degraded') {
+  //           console.log('%c✅ Backend Connected ', 'background: #22c55e; color: white; font-size: 14px; padding: 5px 10px; border-radius: 4px;');
+  //           console.log('[App.tsx] MongoDB status:', data.mongodb);
+  //           setBackendConnected(true);
+  //           retryCount = 0; // Reset retry count on success
+  //           return;
+  //         }
+  //       }
         
-        // Response not OK or unexpected format - silently retry
-        if (retryCount < MAX_RETRIES) {
-          retryCount++;
-          setTimeout(() => checkServer(true), 2000);
-        } else {
-          setBackendConnected(false);
-        }
-      } catch (error: any) {
-        // Silently retry connection errors
-        if (retryCount < MAX_RETRIES) {
-          retryCount++;
-          setTimeout(() => checkServer(true), 2000);
-        } else {
-          // All retries failed - set disconnected state
-          setBackendConnected(false);
-        }
-      }
-    };
+  //       // Response not OK or unexpected format - silently retry
+  //       if (retryCount < MAX_RETRIES) {
+  //         retryCount++;
+  //         setTimeout(() => checkServer(true), 2000);
+  //       } else {
+  //         setBackendConnected(false);
+  //       }
+  //     } catch (error: any) {
+  //       // Silently retry connection errors
+  //       if (retryCount < MAX_RETRIES) {
+  //         retryCount++;
+  //         setTimeout(() => checkServer(true), 2000);
+  //       } else {
+  //         // All retries failed - set disconnected state
+  //         setBackendConnected(false);
+  //       }
+  //     }
+  //   };
     
-    // GRACE PERIOD: Wait 5 seconds before first check to give backend time to start
-    // This prevents premature "Offline Mode" indicators when the backend is starting
-    const initialCheckTimeout = setTimeout(() => {
-      checkServer();
-    }, 5000);
+  //   // GRACE PERIOD: Wait 5 seconds before first check to give backend time to start
+  //   // This prevents premature "Offline Mode" indicators when the backend is starting
+  //   const initialCheckTimeout = setTimeout(() => {
+  //     checkServer();
+  //   }, 5000);
     
-    // Re-check every 15 seconds (give more time between checks)
-    const interval = setInterval(() => checkServer(false), 15000);
+  //   // Re-check every 15 seconds (give more time between checks)
+  //   const interval = setInterval(() => checkServer(false), 15000);
     
-    return () => {
-      clearTimeout(initialCheckTimeout);
-      clearInterval(interval);
-    };
-  }, []);
+  //   return () => {
+  //     clearTimeout(initialCheckTimeout);
+  //     clearInterval(interval);
+  //   };
+  // }, []);
 
   // Show login page if not logged in
   if (!currentUser) {

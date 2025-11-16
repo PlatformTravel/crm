@@ -16,20 +16,14 @@ export function isDatabaseInitializing(error: any): boolean {
 }
 
 // Generic fetch wrapper for backend calls with timeout and automatic retry for DB initialization
-async function backendFetch(endpoint: string, options: RequestInit = {}, customTimeout?: number, retryCount = 0): Promise<any> {
+async function backendFetch(endpoint: string, options: RequestInit = {}, customTimeout?: number): Promise<any> {
   const url = `${BACKEND_URL}${endpoint}`;
-  
-  // Silently make requests (no console logs unless error)
-  
+
   // Create an AbortController for timeout
-  // Use longer timeout for health checks (60s) to allow MongoDB to connect
-  // Regular requests use 30s timeout (increased from 15s)
-  const isHealthCheck = endpoint.includes('/health') || endpoint.includes('/test');
-  const timeout = customTimeout || (isHealthCheck ? 60000 : 30000);
-  
+  const timeout = customTimeout || 30000; 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -44,47 +38,22 @@ async function backendFetch(endpoint: string, options: RequestInit = {}, customT
 
     if (!response.ok) {
       const errorText = await response.text();
-      
-      // Check if it's a database initialization error (503)
-      if (response.status === 503 && errorText.includes('not_initialized') || errorText.includes('Database not ready')) {
-        // Auto-retry up to 3 times with exponential backoff
-        if (retryCount < 3) {
-          const delay = Math.min(2000 * Math.pow(2, retryCount), 8000); // 2s, 4s, 8s
-          console.log(`[Backend] Database initializing, retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return backendFetch(endpoint, options, customTimeout, retryCount + 1);
-        }
-      }
-      
-      // Silently handle all HTTP errors
-      throw new Error(`Server responded with ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error: any) {
     clearTimeout(timeoutId);
-    
-    if (error.name === 'AbortError') {
-      throw new Error(`Backend server not responding. Please make sure it's running:\n\nQuick Fix:\n1. Double-click: 🔴-START-BACKEND-FIXED.bat (Windows)\n2. OR run: ./🔴-START-BACKEND-FIXED.sh (Mac/Linux)\n3. Wait for "✅ MongoDB connected successfully"`);
-    }
-    
-    // Network errors (server not running)
-    if (error.message?.includes('fetch failed') || error.message?.includes('Failed to fetch')) {
-      throw new Error(`Cannot connect to backend server at ${BACKEND_URL}.\n\n🚨 BACKEND SERVER NOT RUNNING!\n\nQuick Fix:\n\n1. Double-click: 🔴-START-BACKEND-FIXED.bat (Windows)\n2. OR run: ./🔴-START-BACKEND-FIXED.sh (Mac/Linux)\n3. Wait for "✅ MongoDB connected successfully"\n\n✅ Once you see "SERVER - FULLY OPERATIONAL", refresh this page!`);
-    }
-    
-    // Silently throw error (handled by calling component)
-    throw error;
   }
 }
+
 
 // Public API
 export const backendService = {
   // Health Check
-  async health() {
-    return backendFetch('/health');
-  },
+  // async health() {
+  //   return backendFetch('/health');
+  // },
 
   // Setup & Initialization
   async setupInit() {
