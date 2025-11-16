@@ -14,33 +14,6 @@ const corsHeaders = {
 // Server version and startup timestamp
 const SERVER_VERSION = '9.3.0-ASSIGNMENTS-FIX';
 const SERVER_STARTED = new Date().toISOString();
-// console.log('\n\n\n');
-// console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-// console.log('🟢                                                         🟢');
-// console.log('🟢  BTM TRAVEL CRM SERVER - FULLY OPERATIONAL! ✅          🟢');
-// console.log('🟢  VERSION: 9.3.0 - ASSIGNMENTS ENDPOINT ADDED!          🟢');
-// console.log('🟢                                                         🟢');
-// console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢');
-// console.log('');
-// console.log('═══════════════════════════════════════════════════════════');
-// console.log('📅 Server started:', SERVER_STARTED);
-// console.log('✅ ALL 54+ endpoints loaded and verified');
-// console.log('✅ User Management: /users, /users/login, /login-audit');
-// console.log('✅ Manager endpoints (BEFORE MongoDB check):');
-// console.log('   - /team-performance ✅');
-// console.log('   - /agent-monitoring/overview ✅');
-// console.log('   - /database/clients ✅');
-// console.log('   - /database/customers ✅');
-// console.log('✅ Admin endpoints: /database/reset-all, /cron/daily-archive');
-// console.log('✅ Customer endpoints: All CRUD operations ready');
-// console.log('✅ Email endpoints: /email-recipients ready');
-// console.log('✅ Archive endpoints: /customers/archived ready');
-// console.log('═══════════════════════════════════════════════════════════');
-// console.log('🔥 CRITICAL FIX: GET /assignments endpoint added!');
-// console.log('   Special Numbers now load correctly in Agent portal');
-// console.log('   All assignment types (client, customer, special) working');
-// console.log('═══════════════════════════════════════════════════════════');
-// console.log('\n');
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
