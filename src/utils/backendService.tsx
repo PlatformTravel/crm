@@ -51,9 +51,9 @@ async function backendFetch(endpoint: string, options: RequestInit = {}, customT
 // Public API
 export const backendService = {
   // Health Check
-  // async health() {
-  //   return backendFetch('/health');
-  // },
+  async health() {
+    return backendFetch('/health');
+  },
 
   // Setup & Initialization
   async setupInit() {

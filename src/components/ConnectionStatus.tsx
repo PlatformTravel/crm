@@ -20,6 +20,7 @@ export function ConnectionStatus() {
     
     try {
       const response = await backendService.health();
+      console.log("response", response)
       
       if (response.status === 'ok') {
         setStatus('connected');

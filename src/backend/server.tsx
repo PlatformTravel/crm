@@ -94,7 +94,7 @@ async function checkMongoReady(): Promise<Response | null> {
     // Try to initialize if not already doing so
     await ensureMongoInitialized();
     return null; // MongoDB is now ready
-  } catch (error) {
+  } catch (error:any) {
     return new Response(
       JSON.stringify({
         success: false,
@@ -132,363 +132,363 @@ Deno.serve({ port: 8000 }, async (req) => {
   const url = new URL(req.url);
   const path = url.pathname;
   
-  // console.log(`[BTM CRM Server] [${req.method}] ${path}`);
+  console.log(`[BTM CRM Server] [${req.method}] ${path}`);
 
   try {
     // ==================== HEALTH & TEST ====================
     // Health check - quick server check (doesn't require MongoDB)
-    // if (path === '/health' || path.includes('/health')) {
-    //   // Check MongoDB status
-    //   if (mongoInitializing) {
-    //     return new Response(
-    //       JSON.stringify({
-    //         status: 'initializing',
-    //         message: 'Server is running, MongoDB is initializing...',
-    //         timestamp: new Date().toISOString(),
-    //         version: SERVER_VERSION,
-    //         mongodb: 'initializing',
-    //       }),
-    //       { 
-    //         status: 200,
-    //         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //       }
-    //     );
-    //   }
+    if (path === '/health' || path.includes('/health')) {
+      // Check MongoDB status
+      if (mongoInitializing) {
+        return new Response(
+          JSON.stringify({
+            status: 'initializing',
+            message: 'Server is running, MongoDB is initializing...',
+            timestamp: new Date().toISOString(),
+            version: SERVER_VERSION,
+            mongodb: 'initializing',
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
       
-    //   if (!mongoInitialized) {
-    //     return new Response(
-    //       JSON.stringify({
-    //         status: 'degraded',
-    //         message: 'Server is running, MongoDB not yet connected',
-    //         timestamp: new Date().toISOString(),
-    //         version: SERVER_VERSION,
-    //         mongodb: 'disconnected',
-    //       }),
-    //       { 
-    //         status: 200, // Return 200 so frontend knows server is alive
-    //         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //       }
-    //     );
-    //   }
+      if (!mongoInitialized) {
+        return new Response(
+          JSON.stringify({
+            status: 'degraded',
+            message: 'Server is running, MongoDB not yet connected',
+            timestamp: new Date().toISOString(),
+            version: SERVER_VERSION,
+            mongodb: 'disconnected',
+          }),
+          { 
+            status: 200, // Return 200 so frontend knows server is alive
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
       
-    //   // MongoDB is initialized, do a quick ping
-    //   try {
-    //     const db = await getMongoDb();
-    //     await db.command({ ping: 1 });
+      // MongoDB is initialized, do a quick ping
+      try {
+        const db = await getMongoDb();
+        await db.command({ ping: 1 });
         
-    //     return new Response(
-    //       JSON.stringify({
-    //         status: 'ok',
-    //         message: 'BTM Travel CRM Server is running (MongoDB Connected)',
-    //         timestamp: new Date().toISOString(),
-    //         version: SERVER_VERSION,
-    //         serverStarted: SERVER_STARTED,
-    //         mongodb: 'connected',
-    //         customerEndpoints: 'available',
-    //       }),
-    //       { 
-    //         status: 200,
-    //         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //       }
-    //     );
-    //   } catch (error) {
-    //     return new Response(
-    //       JSON.stringify({
-    //         status: 'degraded',
-    //         message: 'Server running but MongoDB ping failed',
-    //         timestamp: new Date().toISOString(),
-    //         version: SERVER_VERSION,
-    //         mongodb: 'error',
-    //         error: error.message,
-    //       }),
-    //       { 
-    //         status: 200, // Return 200 so frontend knows server is alive
-    //         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //       }
-    //     );
-    //   }
-    // }
+        return new Response(
+          JSON.stringify({
+            status: 'ok',
+            message: 'BTM Travel CRM Server is running (MongoDB Connected)',
+            timestamp: new Date().toISOString(),
+            version: SERVER_VERSION,
+            serverStarted: SERVER_STARTED,
+            mongodb: 'connected',
+            customerEndpoints: 'available',
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            status: 'degraded',
+            message: 'Server running but MongoDB ping failed',
+            timestamp: new Date().toISOString(),
+            version: SERVER_VERSION,
+            mongodb: 'error',
+            error: error.message,
+          }),
+          { 
+            status: 200, // Return 200 so frontend knows server is alive
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
 
-    // if (path === '/test' || path.includes('/test')) {
-    //   return new Response(
-    //     JSON.stringify({
-    //       status: 'ok',
-    //       message: 'BTM Travel CRM Server - All Systems Operational',
-    //       timestamp: new Date().toISOString(),
-    //       mongo: mongoInitialized ? 'connected' : 'not ready',
-    //       serverVersion: SERVER_VERSION,
-    //       serverStarted: SERVER_STARTED,
-    //       totalEndpoints: '50+',
-    //       criticalEndpointsStatus: {
-    //         '/team-performance': 'LOADED ✅',
-    //         '/agent-monitoring/overview': 'LOADED ✅',
-    //         '/agent-monitoring/agent/:id': 'LOADED ✅',
-    //         '/database/clients': 'LOADED ✅',
-    //         '/database/customers': 'LOADED ✅',
-    //         '/database/reset-all': 'LOADED ✅',
-    //         '/cron/daily-archive': 'LOADED ✅'
-    //       },
-    //       useDebugEndpoint: 'Visit /debug/endpoints for complete endpoint list'
-    //     }),
-    //     { 
-    //       status: 200,
-    //       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //     }
-    //   );
-    // }
+    if (path === '/test' || path.includes('/test')) {
+      return new Response(
+        JSON.stringify({
+          status: 'ok',
+          message: 'BTM Travel CRM Server - All Systems Operational',
+          timestamp: new Date().toISOString(),
+          mongo: mongoInitialized ? 'connected' : 'not ready',
+          serverVersion: SERVER_VERSION,
+          serverStarted: SERVER_STARTED,
+          totalEndpoints: '50+',
+          criticalEndpointsStatus: {
+            '/team-performance': 'LOADED ✅',
+            '/agent-monitoring/overview': 'LOADED ✅',
+            '/agent-monitoring/agent/:id': 'LOADED ✅',
+            '/database/clients': 'LOADED ✅',
+            '/database/customers': 'LOADED ✅',
+            '/database/reset-all': 'LOADED ✅',
+            '/cron/daily-archive': 'LOADED ✅'
+          },
+          useDebugEndpoint: 'Visit /debug/endpoints for complete endpoint list'
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // // Simple test endpoint to verify server is running latest code
-    // if (path === '/test-setup' && req.method === 'GET') {
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: true,
-    //       message: '✅ Server is running the LATEST code (v6.0.0-OCT24)!',
-    //       version: SERVER_VERSION,
-    //       timestamp: new Date().toISOString(),
-    //       serverStarted: SERVER_STARTED,
-    //       mongoInitialized,
-    //       mongoInitializing,
-    //       endpointsVerified: [
-    //         '/email-recipients',
-    //         '/database/customers/assigned/:id',
-    //         '/customers/archived',
-    //         '/users/login',
-    //         '/setup/init'
-    //       ]
-    //     }),
-    //     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //   );
-    // }
+    if (path === '/test-setup' && req.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: '✅ Server is running the LATEST code (v6.0.0-OCT24)!',
+          version: SERVER_VERSION,
+          timestamp: new Date().toISOString(),
+          serverStarted: SERVER_STARTED,
+          mongoInitialized,
+          mongoInitializing,
+          endpointsVerified: [
+            '/email-recipients',
+            '/database/customers/assigned/:id',
+            '/customers/archived',
+            '/users/login',
+            '/setup/init'
+          ]
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // // Debug endpoint to verify manager endpoints exist
-    // if (path === '/debug/manager-endpoints' && req.method === 'GET') {
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: true,
-    //       message: 'Manager endpoints diagnostic',
-    //       version: SERVER_VERSION,
-    //       serverStarted: SERVER_STARTED,
-    //       mongoStatus: {
-    //         initialized: mongoInitialized,
-    //         initializing: mongoInitializing
-    //       },
-    //       managerEndpoints: {
-    //         '/team-performance': {
-    //           method: 'GET',
-    //           status: 'LOADED ✅',
-    //           lineNumber: 3021,
-    //           requiresMongo: true
-    //         },
-    //         '/agent-monitoring/overview': {
-    //           method: 'GET',
-    //           status: 'LOADED ✅',
-    //           lineNumber: 3111,
-    //           requiresMongo: true
-    //         },
-    //         '/database/customers': {
-    //           method: 'GET',
-    //           status: 'LOADED ✅',
-    //           lineNumber: 3174,
-    //           requiresMongo: true
-    //         }
-    //       },
-    //       note: 'If MongoDB is not initialized, these endpoints will return 503, not 404',
-    //       troubleshooting: {
-    //         if404: 'The server is running OLD code. Please kill all Deno processes and restart.',
-    //         if503: 'MongoDB is initializing. Wait 10-30 seconds and try again.',
-    //         ifSuccess: 'Endpoints are working correctly!'
-    //       }
-    //     }),
-    //     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //   );
-    // }
+    if (path === '/debug/manager-endpoints' && req.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Manager endpoints diagnostic',
+          version: SERVER_VERSION,
+          serverStarted: SERVER_STARTED,
+          mongoStatus: {
+            initialized: mongoInitialized,
+            initializing: mongoInitializing
+          },
+          managerEndpoints: {
+            '/team-performance': {
+              method: 'GET',
+              status: 'LOADED ✅',
+              lineNumber: 3021,
+              requiresMongo: true
+            },
+            '/agent-monitoring/overview': {
+              method: 'GET',
+              status: 'LOADED ✅',
+              lineNumber: 3111,
+              requiresMongo: true
+            },
+            '/database/customers': {
+              method: 'GET',
+              status: 'LOADED ✅',
+              lineNumber: 3174,
+              requiresMongo: true
+            }
+          },
+          note: 'If MongoDB is not initialized, these endpoints will return 503, not 404',
+          troubleshooting: {
+            if404: 'The server is running OLD code. Please kill all Deno processes and restart.',
+            if503: 'MongoDB is initializing. Wait 10-30 seconds and try again.',
+            ifSuccess: 'Endpoints are working correctly!'
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // // Setup endpoint to initialize default admin user
-    // if (path === '/setup/init' && req.method === 'POST') {
-    //   try {
-    //     const collection = await getCollection(Collections.USERS);
+    if (path === '/setup/init' && req.method === 'POST') {
+      try {
+        const collection = await getCollection(Collections.USERS);
         
-    //     // Check if admin already exists
-    //     const existingAdmin = await collection.findOne({ username: 'admin' });
-    //     if (existingAdmin) {
-    //       return new Response(
-    //         JSON.stringify({ 
-    //           success: false, 
-    //           error: 'Default admin user already exists',
-    //           message: 'Admin user is already initialized. Use the existing admin credentials to log in.'
-    //         }),
-    //         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //       );
-    //     }
+        // Check if admin already exists
+        const existingAdmin = await collection.findOne({ username: 'admin' });
+        if (existingAdmin) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Default admin user already exists',
+              message: 'Admin user is already initialized. Use the existing admin credentials to log in.'
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         
-    //     // Create default admin user
-    //     const adminUser = {
-    //       id: 'admin-1',
-    //       username: 'admin',
-    //       name: 'Administrator',
-    //       email: 'admin@btmtravel.net',
-    //       password: 'admin123',
-    //       role: 'admin',
-    //       permissions: [],
-    //       createdAt: new Date().toISOString(),
-    //       updatedAt: new Date().toISOString()
-    //     };
+        // Create default admin user
+        const adminUser = {
+          id: 'admin-1',
+          username: 'admin',
+          name: 'Administrator',
+          email: 'admin@btmtravel.net',
+          password: 'admin123',
+          role: 'admin',
+          permissions: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
         
-    //     await collection.insertOne(adminUser);
+        await collection.insertOne(adminUser);
         
-    //     console.log('[SETUP] ✅ Default admin user created');
+        console.log('[SETUP] ✅ Default admin user created');
         
-    //     return new Response(
-    //       JSON.stringify({ 
-    //         success: true,
-    //         message: 'Default admin user created successfully',
-    //         credentials: {
-    //           username: 'admin',
-    //           password: 'admin123'
-    //         }
-    //       }),
-    //       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //     );
-    //   } catch (error) {
-    //     console.error('[SETUP] Error creating admin:', error);
-    //     return new Response(
-    //       JSON.stringify({ success: false, error: error.message }),
-    //       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //     );
-    //   }
-    // }
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Default admin user created successfully',
+            credentials: {
+              username: 'admin',
+              password: 'admin123'
+            }
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('[SETUP] Error creating admin:', error);
+        return new Response(
+          JSON.stringify({ success: false, error: error.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // // Debug endpoint to list all users (with passwords for debugging)
-    // if (path === '/debug/users' && req.method === 'GET') {
-    //   try {
-    //     const collection = await getCollection(Collections.USERS);
-    //     const users = await collection.find({}).toArray();
-    //     return new Response(
-    //       JSON.stringify({ 
-    //         success: true, 
-    //         count: users.length,
-    //         users: users.map(u => ({
-    //           id: u.id,
-    //           username: u.username,
-    //           password: u.password,
-    //           email: u.email,
-    //           role: u.role,
-    //           createdAt: u.createdAt
-    //         }))
-    //       }),
-    //       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //     );
-    //   } catch (error) {
-    //     return new Response(
-    //       JSON.stringify({ success: false, error: error.message }),
-    //       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //     );
-    //   }
-    // }
+    if (path === '/debug/users' && req.method === 'GET') {
+      try {
+        const collection = await getCollection(Collections.USERS);
+        const users = await collection.find({}).toArray();
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            count: users.length,
+            users: users.map(u => ({
+              id: u.id,
+              username: u.username,
+              password: u.password,
+              email: u.email,
+              role: u.role,
+              createdAt: u.createdAt
+            }))
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ success: false, error: error.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // // Debug CORS configuration
-    // if (path === '/debug/cors' && req.method === 'GET') {
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: true,
-    //       message: 'CORS configuration is properly set up',
-    //       corsHeaders: {
-    //         'Access-Control-Allow-Origin': corsHeaders['Access-Control-Allow-Origin'],
-    //         'Access-Control-Allow-Methods': corsHeaders['Access-Control-Allow-Methods'],
-    //         'Access-Control-Allow-Headers': corsHeaders['Access-Control-Allow-Headers'],
-    //         'Access-Control-Expose-Headers': corsHeaders['Access-Control-Expose-Headers'],
-    //         'Access-Control-Max-Age': corsHeaders['Access-Control-Max-Age'],
-    //       },
-    //       note: 'All responses from this server include these CORS headers',
-    //       timestamp: new Date().toISOString()
-    //     }),
-    //     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //   );
-    // }
+    if (path === '/debug/cors' && req.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'CORS configuration is properly set up',
+          corsHeaders: {
+            'Access-Control-Allow-Origin': corsHeaders['Access-Control-Allow-Origin'],
+            'Access-Control-Allow-Methods': corsHeaders['Access-Control-Allow-Methods'],
+            'Access-Control-Allow-Headers': corsHeaders['Access-Control-Allow-Headers'],
+            'Access-Control-Expose-Headers': corsHeaders['Access-Control-Expose-Headers'],
+            'Access-Control-Max-Age': corsHeaders['Access-Control-Max-Age'],
+          },
+          note: 'All responses from this server include these CORS headers',
+          timestamp: new Date().toISOString()
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // // Debug endpoint to verify endpoints are loaded
-    // if (path === '/debug/endpoints' && req.method === 'GET') {
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: true,
-    //       serverVersion: SERVER_VERSION,
-    //       serverStarted: SERVER_STARTED,
-    //       mongoStatus: mongoInitialized ? 'connected' : (mongoInitializing ? 'initializing' : 'not connected'),
-    //       message: 'All 50+ endpoints loaded and verified',
-    //       endpointCategories: {
-    //         core: ['/health', '/test', '/debug/endpoints', '/debug/users', '/setup/init'],
-    //         authentication: ['/users/login', '/users', '/users/:id', '/login-audit'],
-    //         clients: [
-    //           '/database/clients',
-    //           '/database/clients/import',
-    //           '/database/clients/assign',
-    //           '/database/clients/:id',
-    //           '/database/clients/bulk-delete',
-    //           '/database/clients/clear-all',
-    //           '/database/clients/archive',
-    //           '/database/clients/archive/bulk-restore'
-    //         ],
-    //         customers: [
-    //           '/database/customers',
-    //           '/database/customers/assigned/:id',
-    //           '/database/customers/import',
-    //           '/database/customers/assign',
-    //           '/customers',
-    //           '/customers/clear',
-    //           '/customers/archived',
-    //           '/customer-interactions'
-    //         ],
-    //         assignments: [
-    //           '/assignments',
-    //           '/assignments/claim',
-    //           '/assignments/mark-called',
-    //           '/number-claims',
-    //           '/claim-number',
-    //           '/release-number',
-    //           '/extend-number-claim'
-    //         ],
-    //         callManagement: [
-    //           '/call-logs',
-    //           '/call-scripts',
-    //           '/call-scripts/:id/activate',
-    //           '/call-scripts/:id',
-    //           '/call-scripts/active/:type'
-    //         ],
-    //         managerOperations: [
-    //           '/team-performance',
-    //           '/agent-monitoring/overview',
-    //           '/agent-monitoring/agent/:id'
-    //         ],
-    //         settings: [
-    //           '/smtp-settings',
-    //           '/smtp-test',
-    //           '/send-email',
-    //           '/send-quick-email',
-    //           '/threecx-settings',
-    //           '/email-recipients'
-    //         ],
-    //         progress: [
-    //           '/daily-progress',
-    //           '/daily-progress/check-reset',
-    //           '/daily-progress/reset'
-    //         ],
-    //         promotions: ['/promotions', '/promotions/:id'],
-    //         archive: ['/archive', '/archive/restore'],
-    //         admin: [
-    //           '/admin/delete-selected-data',
-    //           '/database/reset-all',
-    //           '/cron/daily-archive'
-    //         ]
-    //       },
-    //       totalEndpoints: '50+',
-    //       status: 'All endpoints operational'
-    //     }),
-    //     { 
-    //       status: 200,
-    //       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //     }
-    //   );
-    // }
+    if (path === '/debug/endpoints' && req.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          serverVersion: SERVER_VERSION,
+          serverStarted: SERVER_STARTED,
+          mongoStatus: mongoInitialized ? 'connected' : (mongoInitializing ? 'initializing' : 'not connected'),
+          message: 'All 50+ endpoints loaded and verified',
+          endpointCategories: {
+            core: ['/health', '/test', '/debug/endpoints', '/debug/users', '/setup/init'],
+            authentication: ['/users/login', '/users', '/users/:id', '/login-audit'],
+            clients: [
+              '/database/clients',
+              '/database/clients/import',
+              '/database/clients/assign',
+              '/database/clients/:id',
+              '/database/clients/bulk-delete',
+              '/database/clients/clear-all',
+              '/database/clients/archive',
+              '/database/clients/archive/bulk-restore'
+            ],
+            customers: [
+              '/database/customers',
+              '/database/customers/assigned/:id',
+              '/database/customers/import',
+              '/database/customers/assign',
+              '/customers',
+              '/customers/clear',
+              '/customers/archived',
+              '/customer-interactions'
+            ],
+            assignments: [
+              '/assignments',
+              '/assignments/claim',
+              '/assignments/mark-called',
+              '/number-claims',
+              '/claim-number',
+              '/release-number',
+              '/extend-number-claim'
+            ],
+            callManagement: [
+              '/call-logs',
+              '/call-scripts',
+              '/call-scripts/:id/activate',
+              '/call-scripts/:id',
+              '/call-scripts/active/:type'
+            ],
+            managerOperations: [
+              '/team-performance',
+              '/agent-monitoring/overview',
+              '/agent-monitoring/agent/:id'
+            ],
+            settings: [
+              '/smtp-settings',
+              '/smtp-test',
+              '/send-email',
+              '/send-quick-email',
+              '/threecx-settings',
+              '/email-recipients'
+            ],
+            progress: [
+              '/daily-progress',
+              '/daily-progress/check-reset',
+              '/daily-progress/reset'
+            ],
+            promotions: ['/promotions', '/promotions/:id'],
+            archive: ['/archive', '/archive/restore'],
+            admin: [
+              '/admin/delete-selected-data',
+              '/database/reset-all',
+              '/cron/daily-archive'
+            ]
+          },
+          totalEndpoints: '50+',
+          status: 'All endpoints operational'
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // ==================== SETUP / INITIALIZE ====================
     // Debug log to see what path we're getting
