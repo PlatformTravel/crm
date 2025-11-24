@@ -647,7 +647,7 @@ function BackendSetupContent() {
                       <li>Double-click <code className="bg-red-100 px-2 py-1 rounded">🔴-START-BACKEND-FIXED.bat</code></li>
                       <li>Wait for "✅ MongoDB connected successfully" message</li>
                       <li>Look for "SERVER - FULLY OPERATIONAL" confirmation</li>
-                      <li>Backend is now running on <code className="bg-blue-100 px-2 py-1 rounded">http://localhost:3000</code></li>
+                      <li>Backend is now running on <code className="bg-blue-100 px-2 py-1 rounded"></code></li>
                     </ol>
                   </div>
 

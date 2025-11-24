@@ -61,7 +61,7 @@ export function DemoModeBanner() {
               </Button>
             </div>
             <div className="text-xs text-green-800 font-semibold">
-              3. Wait for "Listening on http://localhost:8000/" then refresh this page
+              {/* 3. Wait for "Listening on http://localhost:8000/" then refresh this page */}
             </div>
           </div>
         </div>

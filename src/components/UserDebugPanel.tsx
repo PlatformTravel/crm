@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { toast } from 'sonner@2.0.3';
 import { backendService } from '../utils/backendService';
 import { Bug, RefreshCw, Key, User, CheckCircle2, XCircle, Database } from 'lucide-react';
+import { BACKEND_URL } from '../utils/config';
 
 export function UserDebugPanel() {
   const [users, setUsers] = useState<any[]>([]);
@@ -20,7 +21,7 @@ export function UserDebugPanel() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/debug/users');
+      const response = await fetch(`${BACKEND_URL}/debug/users`);
       const data = await response.json();
       
       if (data.success) {

@@ -195,7 +195,7 @@ export function DeploymentRequired() {
                         🚀 BTM Travel CRM Server running on MongoDB!<br/>
                         📊 Database: btm_travel_crm @ cluster0.vlklc6c.mongodb.net<br/>
                         ✅ All Supabase dependencies removed!<br/>
-                        Listening on http://localhost:8000/
+                        {/* Listening on http://localhost:8000/ */}
                       </div>
                     </div>
                   </div>
