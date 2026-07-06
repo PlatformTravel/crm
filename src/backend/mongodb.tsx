@@ -6,6 +6,7 @@ import { config } from './config.tsx';
 //   FRONTEND_URL: Deno.env.get("FRONTEND_URL"),
 // };
 
+
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 let connectionAttempts = 0;
@@ -29,11 +30,10 @@ export async function getMongoDb(): Promise<Db> {
   // const MONGODB_URI = 'mongodb+srv://crm_db_user:y7eShqCFNoyfSLPb@cluster0.vlklc6c.mongodb.net/btm_travel_crm?retryWrites=true&w=majority&connectTimeoutMS=45000&serverSelectionTimeoutMS=45000';
 
   if (!config.MONGODB_URI) {
-    console.log("MONGODB_URI not found!");
     throw new Error("❌ MONGODB_URI is missing. Check your .env file!");
   }
 
-  console.log(`[MongoDB] Connecting to database (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})...`);
+  // console.log(`[MongoDB] Connecting to database (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})...`);
 
   try {
     const client = new MongoClient(config.MONGODB_URI, {
@@ -52,7 +52,8 @@ export async function getMongoDb(): Promise<Db> {
     await client.db('admin').command({ ping: 1 });
     
     cachedClient = client;
-    cachedDb = client.db('btm_travel_crm');
+    const dbName = config.MONGODB_DB || 'btm_crm';
+    cachedDb = client.db(dbName);
     connectionAttempts = 0; // Reset on successful connection
 
     console.log('[MongoDB] ✅ Connected successfully and verified');
@@ -94,7 +95,7 @@ export async function getCollection<T = any>(collectionName: string): Promise<Co
       
       if (attempt < 3) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Max 5s delay
-        console.log(`[MongoDB] Retrying in ${delay}ms...`);
+        // console.log(`[MongoDB] Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         
         // Reset cache to force reconnection
@@ -134,7 +135,7 @@ export const Collections = {
  * Initialize database with indexes and default data
  */
 export async function initializeDatabase() {
-  console.log('[MongoDB] Initializing database...');
+  // console.log('[MongoDB] Initializing database...');
   
   const db = await getMongoDb();
 
@@ -181,7 +182,7 @@ export async function initializeDatabase() {
     // Create default admin user if no users exist
     const userCount = await users.countDocuments();
     if (userCount === 0) {
-      console.log('[MongoDB] Creating default admin user...');
+      // console.log('[MongoDB] Creating default admin user...');
       await users.insertOne({
         id: 'admin-1',
         username: 'admin',
@@ -192,7 +193,7 @@ export async function initializeDatabase() {
         permissions: [],
         createdAt: new Date().toISOString(),
       });
-      console.log('[MongoDB] ✅ Default admin user created (username: admin, password: admin123)');
+      // console.log('[MongoDB] ✅ Default admin user created (username: admin, password: admin123)');
     }
 
     console.log('[MongoDB] ✅ Database initialized successfully');
@@ -207,12 +208,13 @@ export async function initializeDatabase() {
  */
 export function convertMongoDoc<T>(doc: any): T {
   if (!doc) return doc;
-  
+
   const { _id, ...rest } = doc;
+  const resolvedId = rest.id ?? (_id != null ? String(_id) : undefined);
+
   return {
     ...rest,
-    // Keep the original id if it exists, otherwise use _id
-    ...(rest.id ? {} : { id: _id.toString() }),
+    ...(resolvedId ? { id: resolvedId } : {}),
   } as T;
 }
 
