@@ -5,9 +5,16 @@
 // //   MONGODB_URI: Deno.env.get("MONGODB_URI"),
 // //   FRONTEND_URL: Deno.env.get("FRONTEND_URL"),
 // // };
-import { load } from "https://deno.land/std/dotenv/mod.ts";
 
-export const config = await load({
-  envPath: new URL('./.env', import.meta.url),
-  export: true,
-});
+export const config = {
+  MONGODB_URI: Deno.env.get("MONGODB_URI"),
+  MONGODB_DB: Deno.env.get("MONGODB_DB"),
+  FRONTEND_URL: Deno.env.get("FRONTEND_URL"),
+};
+
+// import { load } from "https://deno.land/std/dotenv/mod.ts";
+
+// export const config = await load({
+//   envPath: new URL('./.env', import.meta.url),
+//   export: true,
+// });
