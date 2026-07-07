@@ -35,7 +35,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { dataService } from '../utils/dataService';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface SpecialNumber {
   id: string;
@@ -108,6 +108,8 @@ export function SpecialDatabaseManager() {
         dataService.getSpecialDatabaseArchive(),
         dataService.getAgents()
       ]);
+
+      console.log('[SPECIAL DB] Fetched data:', { numbersData, archiveData, agentsData });
 
       if (numbersData.success) {
         console.log('[SPECIAL DB] Fetched numbers:', numbersData.numbers?.length || 0);

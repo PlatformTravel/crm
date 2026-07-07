@@ -22,7 +22,7 @@ import {
   Trash2,
   Sparkles
 } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { backendService } from "../utils/backendService";
 import { dataService } from "../utils/dataService";
 import { BACKEND_URL } from "../utils/config";
@@ -77,12 +77,22 @@ export function NumberBankManager() {
         setAgents(agentsData.agents || []);
       }
 
+      const isAvailableRecord = (record: any) => {
+        const status = String(record?.status || '').toLowerCase();
+        const assignedTo = record?.assignedTo;
+        return !assignedTo && (!status || status === 'available' || status === 'new' || status === 'pending');
+      };
+
       if (clientsData.success) {
-        setClientBank(clientsData.records || clientsData.clients || []);
+        const availableClients = (clientsData.records || clientsData.clients || [])
+          .filter((record: any) => isAvailableRecord(record));
+        setClientBank(availableClients);
       }
 
       if (customersData.success) {
-        setCustomerBank(customersData.records || customersData.customers || []);
+        const availableCustomers = (customersData.records || customersData.customers || [])
+          .filter((record: any) => isAvailableRecord(record));
+        setCustomerBank(availableCustomers);
       }
 
       if (specialData.success) {

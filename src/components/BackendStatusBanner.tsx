@@ -46,18 +46,13 @@ export function BackendStatusBanner() {
       }
     };
 
-    // GRACE PERIOD: Wait 3 seconds before first check to give backend time to start
-    // This banner only shows when backend IS connected (success state), so no rush
+    // Delay the first check slightly so the page can settle before probing the backend.
     const initialCheckTimeout = setTimeout(() => {
       checkBackend();
     }, 3000);
 
-    // Check every 10 seconds
-    const interval = setInterval(checkBackend, 10000);
-
     return () => {
       clearTimeout(initialCheckTimeout);
-      clearInterval(interval);
     };
   }, []);
 

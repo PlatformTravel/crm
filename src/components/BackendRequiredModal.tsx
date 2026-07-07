@@ -39,18 +39,13 @@ export function BackendRequiredModal() {
       }
     };
 
-    // GRACE PERIOD: Wait 3 seconds before first check to give backend time to start
-    // This prevents the error from appearing immediately on page load
+    // Delay the first check slightly so the page can settle before probing the backend.
     const initialCheckTimeout = setTimeout(() => {
       checkAndShow();
     }, 3000);
 
-    // Check every 5 seconds after initial check
-    const interval = setInterval(checkAndShow, 5000);
-
     return () => {
       clearTimeout(initialCheckTimeout);
-      clearInterval(interval);
     };
   }, []);
 

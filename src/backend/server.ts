@@ -581,7 +581,7 @@ export async function handleRequest(req: any): Promise<Response> {
     return new Response(JSON.stringify({ success: true, message: 'Database reset complete', deletedCount }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
-  // nothing matched
+  
   return new Response(JSON.stringify({ success: false, error: 'Endpoint not found' }), {
     status: 404,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }

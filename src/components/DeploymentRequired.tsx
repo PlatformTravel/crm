@@ -9,8 +9,6 @@ import { BACKEND_URL } from '../utils/config';
 export function DeploymentRequired() {
   const [testing, setTesting] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
-  const [autoRetrying, setAutoRetrying] = useState(true);
-  const [secondsUntilRetry, setSecondsUntilRetry] = useState(5);
 
   const copyCommand = async (command: string) => {
     const success = await copyToClipboard(command);
@@ -45,46 +43,13 @@ export function DeploymentRequired() {
     }
   };
 
-  // Auto-retry every 5 seconds
-  useState(() => {
-    if (!autoRetrying) return;
-
-    const interval = setInterval(async () => {
-      setSecondsUntilRetry((prev) => {
-        if (prev <= 1) {
-          testConnection();
-          return 5;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  });
+  useEffect(() => {
+    testConnection();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full space-y-6">
-        {/* Auto-retry banner */}
-        {autoRetrying && (
-          <div className="bg-blue-600 text-white px-6 py-3 rounded-lg text-center animate-pulse">
-            <div className="flex items-center justify-center gap-3">
-              <RefreshCw className="w-5 h-5 animate-spin" />
-              <span className="font-semibold">
-                Auto-checking every 5 seconds... Next check in {secondsUntilRetry}s
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAutoRetrying(false)}
-                className="bg-white/20 hover:bg-white/30 border-white/30 text-white"
-              >
-                Stop Auto-Check
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Main Alert */}
         <Card className="border-4 border-red-500 shadow-2xl bg-slate-800/90 backdrop-blur animate-in fade-in slide-in-from-bottom-4 duration-500">
           <CardHeader className="bg-gradient-to-r from-red-600 to-orange-600 text-white">

@@ -51,11 +51,6 @@ export function ConnectionStatus() {
 
   useEffect(() => {
     checkConnection();
-    
-    // Check every 30 seconds
-    const interval = setInterval(checkConnection, 30000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   const getStatusColor = () => {
@@ -278,8 +273,6 @@ export function ConnectionIndicator() {
 
   useEffect(() => {
     checkConnection();
-    const interval = setInterval(checkConnection, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const getIcon = () => {

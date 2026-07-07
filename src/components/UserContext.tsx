@@ -174,9 +174,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // Use the unified dataService which handles backend/localStorage fallback automatically
     try {
       const response = await dataService.login(username, password);
+
       
       if (response.success && response.user) {
-        console.log('[LOGIN] ✅ Authentication successful:', response.user.username);
         setCurrentUser(response.user);
         localStorage.setItem('btm_current_user', JSON.stringify(response.user));
         return true;

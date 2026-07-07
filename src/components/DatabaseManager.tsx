@@ -20,7 +20,7 @@ import {
   TrendingUp,
   Package
 } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { backendService } from "../utils/backendService";
 import { BACKEND_URL } from "../utils/config";
 
@@ -80,6 +80,7 @@ export function DatabaseManager() {
         availableCustomers: totalCustomers - assignedCustomers
       });
     } catch (error: any) {
+      console.error('Error loading database stats:', error);
       if (error.message?.includes('503') && 
           (error.message?.includes('not_initialized') || error.message?.includes('Database not ready'))) {
         console.log('Database is initializing, will retry automatically...');

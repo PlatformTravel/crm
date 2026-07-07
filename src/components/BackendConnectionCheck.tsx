@@ -9,9 +9,6 @@ export function BackendConnectionCheck() {
 
   useEffect(() => {
     checkConnection();
-    // Check every 10 seconds
-    const interval = setInterval(checkConnection, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   const checkConnection = async () => {

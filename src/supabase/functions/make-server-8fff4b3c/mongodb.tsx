@@ -14,15 +14,16 @@ export async function getMongoDb(): Promise<Db> {
   }
 
   // Hardcoded MongoDB connection string
-  const MONGODB_URI = 'mongodb+srv://crm_db_user:y7eShqCFNoyfSLPb@cluster0.vlklc6c.mongodb.net/btm_travel_crm?retryWrites=true&w=majority';
+  const MONGODB_URI = Deno.env.get('MONGODB_URI') || '';
+  const MONGODB_DB = Deno.env.get('MONGODB_DB') || 'btm_crm';
 
-  console.log('[MongoDB] Connecting to database...');
+  console.log(`[MongoDB] Connecting to database... ${MONGODB_URI}`);
 
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
   
   cachedClient = client;
-  cachedDb = client.db('btm_travel_crm');
+  cachedDb = client.db(MONGODB_DB);
 
   console.log('[MongoDB] ✅ Connected successfully');
 

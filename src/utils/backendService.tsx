@@ -1,6 +1,7 @@
 // Backend Service - Pure MongoDB Backend (No Supabase!)
 import { BACKEND_URL } from './config';
 
+
 // Helper function to check if error is a database initialization error (503)
 export function isDatabaseInitializing(error: any): boolean {
   if (!error || !error.message) return false;
@@ -34,16 +35,38 @@ async function backendFetch(endpoint: string, options: RequestInit = {}, customT
       signal: controller.signal,
     });
 
+    console.log(`[BACKEND] ${options.method || 'GET'} ${url} - Status: ${response.status} ${response.statusText}`);
+
+    const responseText = await response.text();
+    let data: any = null;
+
+    try {
+      data = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      data = { success: false, error: responseText || 'Invalid JSON response from backend' };
+    }
+
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorMessage = data?.error || data?.message || `Request failed with status ${response.status}`;
+      console.error(`[BACKEND] ${options.method || 'GET'} ${url} - Error: ${errorMessage}`);
+      return {
+        success: false,
+        error: errorMessage,
+        status: response.status,
+        data,
+      };
     }
 
-    const data = await response.json();
-    return data;
+    return data || { success: true };
   } catch (error: any) {
     clearTimeout(timeoutId);
+    const message = error?.name === 'AbortError'
+      ? 'Request timed out'
+      : error?.message || 'Network request failed';
+    console.error(`[BACKEND] ${options.method || 'GET'} ${url} - Error: ${message}`);
+    return { success: false, error: message, status: 0 };
   }
 }
 

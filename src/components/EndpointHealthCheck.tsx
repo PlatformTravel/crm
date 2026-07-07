@@ -23,7 +23,7 @@ export function EndpointHealthCheck() {
   ]);
   const [isChecking, setIsChecking] = useState(false);
   const [serverVersion, setServerVersion] = useState<string>('');
-  const [showRestartGuide, setShowRestartGuide] = useState(false);
+  const [showRestartGuide, setShowRestartGuide] = useState(false)
 
   const checkEndpoints = async () => {
     setIsChecking(true);

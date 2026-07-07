@@ -7,7 +7,7 @@ import { localStorageService } from './localStorageService';
 // Track backend availability
 let backendAvailable = true;
 let lastBackendCheck = 0;
-const CHECK_INTERVAL = 30000; // Check every 30 seconds
+const CHECK_INTERVAL = 30000; 
 
 // // Check if backend is available
 async function isBackendAvailable(): Promise<boolean> {
@@ -61,6 +61,7 @@ export const dataService = {
   async login(username: string, password: string) {
     try {
       const response = await backendService.login(username, password);
+      console.log('[DataService] Login response from backend:', response);
       console.log('[DataService] ✅ Login via MongoDB:', response.success ? 'Success' : 'Failed');
       return response;
     } catch (error: any) {
