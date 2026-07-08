@@ -1,7 +1,7 @@
 import { corsHeaders, SERVER_VERSION, SERVER_STARTED } from '../lib/common.ts';
 import { getMongoDb } from '../mongodb.tsx';
 import { checkMongoReady, isMongoInitialized, isMongoInitializing } from '../lib/db.ts';
-import { config } from '../config.tsx'
+import { config } from '../config.ts'
 
 console.log(`[HealthController] config: ${(config.MONGODB_URI)}`);
 
