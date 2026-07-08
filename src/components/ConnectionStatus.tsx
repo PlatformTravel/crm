@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Alert, AlertDescription } from './ui/alert';
 import { Wifi, WifiOff, Database, Server, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { BACKEND_URL } from '../utils/config';
+import { config } from '../backend/config.tsx';
+
 
 export function ConnectionStatus() {
   const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected' | 'initializing'>('checking');
@@ -93,7 +94,7 @@ export function ConnectionStatus() {
           </div>
         </div>
         <CardDescription>
-          Backend: {BACKEND_URL}
+          Backend: {config.BACKEND_URL}
         </CardDescription>
       </CardHeader>
       

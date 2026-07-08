@@ -33,7 +33,8 @@ import { BackendDiagnostics } from './BackendDiagnostics';
 import { CounterResetManager } from './CounterResetManager';
 
 import { Permission } from './UserContext';
-import { BACKEND_URL } from "../utils/config";
+import { config } from "../backend/config.tsx";
+
 
 interface UserSettings {
   id: string;
@@ -248,7 +249,7 @@ export function AdminSettings() {
   const handleSyncFromDatabase = async () => {
     try {
       toast.info('Syncing users from database...');
-      const response = await fetch(`${BACKEND_URL}/debug/users`);
+      const response = await fetch(`${config.BACKEND_URL}/debug/users`);
       const data = await response.json();
       
       if (data.success && data.users) {
