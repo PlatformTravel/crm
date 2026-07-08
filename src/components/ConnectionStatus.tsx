@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Alert, AlertDescription } from './ui/alert';
 import { Wifi, WifiOff, Database, Server, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { config } from '../backend/config.tsx';
+import { config } from '../backend/config.ts';
 
 
 export function ConnectionStatus() {

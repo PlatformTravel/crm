@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle, ExternalLink } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 interface EndpointStatus {

@@ -33,7 +33,7 @@ import { BackendDiagnostics } from './BackendDiagnostics';
 import { CounterResetManager } from './CounterResetManager';
 
 import { Permission } from './UserContext';
-import { config } from "../backend/config.tsx";
+import { config } from "../backend/config.ts";
 
 
 interface UserSettings {

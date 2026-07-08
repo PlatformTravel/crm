@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { toast } from 'sonner@2.0.3';
 import { backendService } from '../utils/backendService';
 import { Bug, RefreshCw, Key, User, CheckCircle2, XCircle, Database } from 'lucide-react';
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 export function UserDebugPanel() {

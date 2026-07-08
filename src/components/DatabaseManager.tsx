@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { backendService } from "../utils/backendService";
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 interface DatabaseStats {
   totalClients: number;

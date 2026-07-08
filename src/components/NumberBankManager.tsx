@@ -25,7 +25,7 @@ import {
 import { toast } from "sonner";
 import { backendService } from "../utils/backendService";
 import { dataService } from "../utils/dataService";
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 interface Agent {

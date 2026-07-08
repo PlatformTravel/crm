@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { AlertCircle, Terminal, Copy, RefreshCw, CheckCircle2, Zap, Server } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { copyToClipboard } from '../utils/clipboard';
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 export function DeploymentRequired() {

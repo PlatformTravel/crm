@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import { CheckCircle, XCircle, AlertCircle, RefreshCw, Copy } from 'lucide-react';
 
 import { toast } from 'sonner@2.0.3';
-import { config } from '../backend/config.tsx';
+import { config } from '../backend/config.ts'
 
 export function BackendDiagnostics() {
   const [testing, setTesting] = useState(false);

@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 interface StartupGuideProps {

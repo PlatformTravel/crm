@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner@2.0.3';
 import { UserPlus, Database, RefreshCw, CheckCircle, XCircle, AlertCircle, Users, Shield, Trash2 } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 interface User {

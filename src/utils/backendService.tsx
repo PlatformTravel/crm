@@ -1,5 +1,5 @@
 // Backend Service - Pure MongoDB Backend (No Supabase!)
-import { config } from '../backend/config.tsx'
+import { config } from '../backend/config.ts'
 
 
 
