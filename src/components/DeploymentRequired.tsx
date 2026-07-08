@@ -4,7 +4,8 @@ import { Button } from './ui/button';
 import { AlertCircle, Terminal, Copy, RefreshCw, CheckCircle2, Zap, Server } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { copyToClipboard } from '../utils/clipboard';
-import { BACKEND_URL } from '../utils/config';
+import { config } from '../backend/config.tsx'
+
 
 export function DeploymentRequired() {
   const [testing, setTesting] = useState(false);
@@ -22,7 +23,7 @@ export function DeploymentRequired() {
   const testConnection = async () => {
     setTesting(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/health`, {
+      const response = await fetch(`${config.BACKEND_URL}/health`, {
         headers: { 'Content-Type': 'application/json' }
       });
       
@@ -76,7 +77,7 @@ export function DeploymentRequired() {
                 <div className="flex items-center gap-2">
                   <span className="w-32 font-semibold text-red-200">Backend URL:</span>
                   <code className="bg-black/50 px-3 py-1 rounded text-red-100 border border-red-500/30">
-                    {BACKEND_URL}
+                    {config.BACKEND_URL}
                   </code>
                 </div>
                 <div className="flex items-center gap-2">

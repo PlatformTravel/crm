@@ -9,7 +9,7 @@
 export const config = {
   MONGODB_URI: Deno.env.get("MONGODB_URI"),
   MONGODB_DB: Deno.env.get("MONGODB_DB"),
-  FRONTEND_URL: Deno.env.get("FRONTEND_URL"),
+  BACKEND_URL: Deno.env.get("FRONTEND_URL"),
 };
 
 // import { load } from "https://deno.land/std/dotenv/mod.ts";

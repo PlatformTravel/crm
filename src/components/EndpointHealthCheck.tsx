@@ -5,7 +5,8 @@ import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle, ExternalLink } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { BACKEND_URL } from '../utils/config';
+import { config } from '../backend/config.tsx'
+
 
 interface EndpointStatus {
   name: string;
@@ -31,7 +32,7 @@ export function EndpointHealthCheck() {
 
     for (const endpoint of endpoints) {
       try {
-        const response = await fetch(`${BACKEND_URL}${endpoint.path}`, {
+        const response = await fetch(`${config.BACKEND_URL}${endpoint.path}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });

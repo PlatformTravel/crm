@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner@2.0.3';
 import { UserPlus, Database, RefreshCw, CheckCircle, XCircle, AlertCircle, Users, Shield, Trash2 } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { BACKEND_URL } from '../utils/config';
+import { config } from '../backend/config.tsx'
+
 
 interface User {
   id: string;
@@ -58,7 +59,7 @@ export function SystemInitializer() {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch(`${BACKEND_URL}/debug/users`);
+      const response = await fetch(`${config.BACKEND_URL}/debug/users`);
       const data = await response.json();
       
       if (data.success) {
@@ -77,7 +78,7 @@ export function SystemInitializer() {
       setLoading(true);
       toast.info('Initializing default admin user...');
       
-      const response = await fetch(`${BACKEND_URL}/setup/init`, {
+      const response = await fetch(`${config.BACKEND_URL}/setup/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });

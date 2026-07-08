@@ -25,7 +25,8 @@ import {
 import { toast } from "sonner";
 import { backendService } from "../utils/backendService";
 import { dataService } from "../utils/dataService";
-import { BACKEND_URL } from "../utils/config";
+import { config } from '../backend/config.tsx'
+
 
 interface Agent {
   id: string;
@@ -130,7 +131,7 @@ export function NumberBankManager() {
         ? '/database/clients/unassign-all' 
         : '/database/customers/unassign-all';
       
-      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      const response = await fetch(`${config.BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -153,7 +154,7 @@ export function NumberBankManager() {
     try {
       toast.info('Recycling completed assignments...', { duration: 2000 });
       
-      const response = await fetch(`${BACKEND_URL}/database/clients/recycle-completed`, {
+      const response = await fetch(`${config.BACKEND_URL}/database/clients/recycle-completed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

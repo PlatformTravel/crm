@@ -1,5 +1,6 @@
 // Backend Service - Pure MongoDB Backend (No Supabase!)
-import { BACKEND_URL } from './config';
+import { config } from '../backend/config.tsx'
+
 
 
 // Helper function to check if error is a database initialization error (503)
@@ -18,7 +19,7 @@ export function isDatabaseInitializing(error: any): boolean {
 
 // Generic fetch wrapper for backend calls with timeout and automatic retry for DB initialization
 async function backendFetch(endpoint: string, options: RequestInit = {}, customTimeout?: number): Promise<any> {
-  const url = `${BACKEND_URL}${endpoint}`;
+  const url = `${config.BACKEND_URL}${endpoint}`;
 
   // Create an AbortController for timeout
   const timeout = customTimeout || 30000; 

@@ -120,14 +120,16 @@ export async function handleRequest(req: any): Promise<Response> {
       });
     }
 
+    // Treat 'new' and 'pending' as available here to match frontend availability logic
     const query: any = {
-      $or: [
-        { status: 'available' },
-        { status: { $exists: false } },
-        { status: null },
-        { status: '' }
+      $and: [
+        { $or: [{ assignedTo: { $exists: false } }, { assignedTo: null }, { assignedTo: '' }] }
       ],
-      $and: [{ $or: [{ assignedTo: { $exists: false } }, { assignedTo: null }, { assignedTo: '' }] }]
+      $or: [
+        { status: { $in: ['available', 'new', 'pending', ''] } },
+        { status: { $exists: false } },
+        { status: null }
+      ]
     };
 
     if (clientIds.length > 0) query.id = { $in: clientIds };
