@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Alert, AlertDescription } from './ui/alert';
 import { Wifi, WifiOff, Database, Server, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { backendService } from '../utils/backendService';
-import { config } from '../backend/config.ts';
+import { BACKEND_URL } from '../utils/config';
 
 
 export function ConnectionStatus() {
@@ -94,7 +94,7 @@ export function ConnectionStatus() {
           </div>
         </div>
         <CardDescription>
-          Backend: {config.BACKEND_URL}
+          Backend: {BACKEND_URL}
         </CardDescription>
       </CardHeader>
       

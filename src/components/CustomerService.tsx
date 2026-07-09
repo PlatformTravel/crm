@@ -17,11 +17,10 @@ import { DialogFooter } from "./ui/dialog";
 import { Calendar } from "./ui/calendar";
 import { jsPDF } from 'jspdf';
 import pptxgen from 'pptxgenjs';
-import logoImage from 'figma:asset/da4baf9e9e75fccb7e053a2cc52f5b251f4636a9.png';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Alert, AlertDescription } from "./ui/alert";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useUser } from "./UserContext";
 import { useThreeCX } from "./ThreeCXContext";
 import { DraggableDialog } from './DraggableDialog';
@@ -60,7 +59,6 @@ const ensureUniqueIds = (customerList: Customer[]): Customer[] => {
   return customerList.map(customer => {
     if (seenIds.has(customer.id)) {
       const newId = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.warn(`[CUSTOMER SERVICE] Duplicate ID detected: ${customer.id}, reassigning to ${newId}`);
       seenIds.add(newId);
       return { ...customer, id: newId };
     }
@@ -171,7 +169,7 @@ export function CustomerService() {
         const { isDatabaseInitializing } = await import('../utils/backendService');
         if (isDatabaseInitializing(error)) return;
         if (!(error instanceof TypeError && error.message.includes('fetch'))) {
-          console.error('[CUSTOMER SERVICE] Failed to fetch promotions:', error);
+          toast.error("Failed to fetch promotions. Please check your internet connection.");
         }
       }
     };
@@ -184,7 +182,7 @@ export function CustomerService() {
           setCallScript(data.script);
         }
       } catch (error) {
-        console.error('[CUSTOMER SERVICE] Error loading existing client call script:', error);
+        toast.error("Failed to load existing client call script. Please check your internet connection.");
       } finally {
         setIsLoadingScript(false);
       }
@@ -193,15 +191,12 @@ export function CustomerService() {
     const loadCustomers = async () => {
       try {
         if (!currentUser) {
-          console.log('[CUSTOMER SERVICE] No current user, skipping customer load');
           setCustomers([]);
           return;
         }
-        console.log('[CUSTOMER SERVICE] Loading customers for agent:', currentUser.id, currentUser.name);
         const data = await backendService.getAssignedCustomers(currentUser.id);
         if (data.success) {
           if (data.customers && data.customers.length > 0) {
-            console.log(`[CUSTOMER SERVICE] ✅ Loaded ${data.customers.length} assigned customers for agent ${currentUser.name}`);
             const transformedCustomers: Customer[] = data.customers.map((record: any) => ({
               id: record.id || `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               name: record.name || 'Unknown',
@@ -225,15 +220,15 @@ export function CustomerService() {
             const uniqueCustomers = ensureUniqueIds(transformedCustomers);
             setCustomers(uniqueCustomers);
           } else {
-            console.log('[CUSTOMER SERVICE] No customers assigned to agent', currentUser.name);
+            toast.info("No customers assigned to you at this time.");
             setCustomers([]);
           }
         } else {
-          console.warn('[CUSTOMER SERVICE] Failed to load assigned customers from database');
+          toast.error("Failed to load assigned customers from database");
           setCustomers([]);
         }
       } catch (error) {
-        console.error('[CUSTOMER SERVICE] Failed to load customers:', error);
+        toast.error("Failed to load customers. Please check your internet connection.");
         setCustomers([]);
       }
     };
@@ -246,12 +241,13 @@ export function CustomerService() {
             const uniqueArchived = ensureUniqueIds(data.customers);
             setArchivedCustomers(uniqueArchived);
             if (JSON.stringify(uniqueArchived) !== JSON.stringify(data.customers)) {
-              console.log('[CUSTOMER SERVICE] Duplicate IDs found in archived customers, saving corrected data');
+              toast.info('[CUSTOMER SERVICE] Duplicate IDs found in archived customers, saving corrected data');
               saveArchivedCustomersToBackend(uniqueArchived);
             }
           }
         }
       } catch (error) {
+        toast.error("Failed to load archived customers. Please check your internet connection.");
         setArchivedCustomers([]);
       }
     };
@@ -266,12 +262,12 @@ export function CustomerService() {
     try {
       const result = await backendService.addCustomer({ customers: customersToSave });
       if (!result.success) {
-        console.error('[CUSTOMER SERVICE] Failed to save customers to backend');
+        toast.error("Failed to save customers to backend");
       } else {
-        console.log('[CUSTOMER SERVICE] Customers saved successfully');
+        toast.success("Customers saved successfully to backend");
       }
     } catch (error) {
-      console.error('[CUSTOMER SERVICE] Error saving customers:', error);
+      toast.error("Failed to save customers to backend");
     }
   };
 
@@ -355,7 +351,7 @@ export function CustomerService() {
         await backendService.archiveCustomer(customer);
       }
     } catch (error) {
-      console.error('[CUSTOMER SERVICE] Error saving archived customers:', error);
+      toast.error("Failed to save archived customers to backend");
     }
   };
 
@@ -582,7 +578,6 @@ export function CustomerService() {
       setArchivedCustomers(updatedArchived);
       await saveArchivedCustomersToBackend(updatedArchived);
       
-      console.log('[CUSTOMER SERVICE] ✅ Customer interaction completed and archived:', selectedCustomer.name);
       
       setCompletionNotes("");
       setInteractionOutcome("resolved");
@@ -590,7 +585,6 @@ export function CustomerService() {
       setIsDialogOpen(false);
       toast.success(`Interaction completed and archived! (${interactionOutcome.replace('-', ' ')})`);
     } catch (error) {
-      console.error('[CUSTOMER SERVICE] Error completing interaction:', error);
       toast.error(`Failed to complete interaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsCompletingInteraction(false);
@@ -738,7 +732,7 @@ export function CustomerService() {
         setParseError("");
       } catch (error) {
         setParseError("Error parsing CSV file. Please check the format.");
-        console.error('CSV parse error:', error);
+        toast.error("Error parsing CSV file. Please check the format.");
       }
     };
     reader.readAsText(file);
@@ -772,7 +766,6 @@ export function CustomerService() {
         fileInputRef.current.value = "";
       }
     } catch (error) {
-      console.error('Error importing customers:', error);
       toast.error("Failed to import customers");
     } finally {
       setIsImporting(false);
@@ -848,7 +841,6 @@ export function CustomerService() {
       toast.success(`${reportFormat.toUpperCase()} report generated successfully!`);
       setIsReportDialogOpen(false);
     } catch (error) {
-      console.error('Error generating report:', error);
       toast.error("Failed to generate report");
     }
   };
@@ -945,13 +937,25 @@ export function CustomerService() {
     slide1.addText(`Total Revenue: ₦${data.stats.totalRevenue.toLocaleString()}`, { x: 1, y: 4, fontSize: 12 });
     const slide2 = pptx.addSlide();
     slide2.addText('Customer Details', { x: 1, y: 0.5, fontSize: 20, bold: true });
-    const tableData = [
-      ['Name', 'Email', 'Phone', 'Business', 'Status']
+    const tableData: any[] = [
+      [
+        { text: 'Name', options: { bold: true } },
+        { text: 'Email', options: { bold: true } },
+        { text: 'Phone', options: { bold: true } },
+        { text: 'Business', options: { bold: true } },
+        { text: 'Status', options: { bold: true } }
+      ]
     ];
     data.customers.slice(0, 10).forEach((c: any) => {
-      tableData.push([c.name, c.email, c.phone, c.business, c.status]);
+      tableData.push([
+        { text: c.name || '' },
+        { text: c.email || '' },
+        { text: c.phone || '' },
+        { text: c.business || '' },
+        { text: c.status || '' }
+      ]);
     });
-    slide2.addTable(tableData, { x: 0.5, y: 1.5, w: 9, fontSize: 10 });
+    slide2.addTable(tableData as any, { x: 0.5, y: 1.5, w: 9, fontSize: 10 });
     await pptx.writeFile({ fileName: `customer-service-report-${Date.now()}.pptx` });
   };
 
@@ -964,18 +968,6 @@ export function CustomerService() {
   const completedInteractions = customers.filter(c => c.interactionCompleted === true).length;
   const pendingInteractions = customers.filter(c => c.interactionCompleted !== true).length;
 
-  useEffect(() => {
-    console.log('[CUSTOMER SERVICE] Statistics update:', {
-      totalCustomers,
-      completedInteractions,
-      pendingInteractions,
-      customers: customers.length,
-      currentUser: currentUser?.name
-    });
-    customers.forEach(c => {
-      console.log(`[CUSTOMER SERVICE] ${c.name}: interactionCompleted=${c.interactionCompleted}, hasNotes=${!!c.notes && c.notes.length > 0}`);
-    });
-  }, [totalCustomers, completedInteractions, pendingInteractions, customers.length, currentUser?.name]);
 
   return (
     <TooltipProvider>
@@ -1302,15 +1294,12 @@ export function CustomerService() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={(e) => {
+                            onClick={(e:any) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('[CUSTOMER SERVICE] Call button clicked for:', customer.name);
                               handleMakeCall(customer.phone, customer.name);
                             }}
-                            onMouseDown={(e) => {
-                              console.log('[CUSTOMER SERVICE] Call button mousedown for:', customer.name);
-                            }}
+                         
                             className="hover:bg-green-50 hover:text-green-700 cursor-pointer relative z-10"
                             type="button"
                             title="Call customer"
@@ -1322,15 +1311,12 @@ export function CustomerService() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={(e) => {
+                            onClick={(e:any) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('[CUSTOMER SERVICE] View details button clicked for:', customer.name);
                               handleViewCustomer(customer);
                             }}
-                            onMouseDown={(e) => {
-                              console.log('[CUSTOMER SERVICE] View button mousedown for:', customer.name);
-                            }}
+                         
                             className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer relative z-10"
                             type="button"
                             title="View details"
@@ -1343,15 +1329,12 @@ export function CustomerService() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={(e) => {
+                              onClick={(e:any) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                console.log('[CUSTOMER SERVICE] Delete button clicked for:', customer.name);
                                 handleDeleteClick(customer);
                               }}
-                              onMouseDown={(e) => {
-                                console.log('[CUSTOMER SERVICE] Delete button mousedown for:', customer.name);
-                              }}
+                           
                               className="hover:bg-red-50 hover:text-red-700 cursor-pointer relative z-10"
                               type="button"
                               title="Delete customer"

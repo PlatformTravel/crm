@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import { config } from '../backend/config.ts'
+import { BACKEND_URL } from '../utils/config';
 
 
 interface StartupGuideProps {
@@ -39,7 +39,7 @@ export function StartupGuide({ backendConnected }: StartupGuideProps) {
 
   // Add helpful console message
   console.log('%c⚠️ BACKEND CONNECTION FAILED ', 'background: #ef4444; color: white; font-size: 14px; padding: 5px 10px; border-radius: 4px;');
-  console.log('Backend server is not responding at', config.BACKEND_URL);
+  console.log('Backend server is not responding at', BACKEND_URL);
   console.log('Please make sure the backend is running:');
   console.log('  cd backend');
   console.log('  deno run --allow-net --allow-env server.tsx');
@@ -49,7 +49,7 @@ export function StartupGuide({ backendConnected }: StartupGuideProps) {
     console.log('[StartupGuide] 🔄 Manual retry triggered...');
     
     try {
-      const response = await fetch(`${config.BACKEND_URL}/health`);
+      const response = await fetch(`${BACKEND_URL}/health`);
       const data = await response.json();
       
       console.log('[StartupGuide] Response:', data);
@@ -83,7 +83,7 @@ export function StartupGuide({ backendConnected }: StartupGuideProps) {
             Backend Connection Failed
           </DialogTitle>
           <DialogDescription>
-            Cannot connect to backend server at {config.BACKEND_URL}
+            Cannot connect to backend server at {BACKEND_URL}
           </DialogDescription>
         </DialogHeader>
 

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { backendService } from "../utils/backendService";
-import { config } from '../backend/config.ts'
+import { BACKEND_URL } from '../utils/config';
 
 interface DatabaseStats {
   totalClients: number;
@@ -384,14 +384,14 @@ export function DatabaseManager() {
       toast.info('Running database migration...', { duration: 2000 });
       
       // Fix clients/numbers
-      const clientsResponse = await fetch(`${config.BACKEND_URL}/database/clients/migrate`, {
+      const clientsResponse = await fetch(`${BACKEND_URL}/database/clients/migrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       const clientsData = await clientsResponse.json();
       
       // Fix customers
-      const customersResponse = await fetch(`${config.BACKEND_URL}/database/customers/migrate`, {
+      const customersResponse = await fetch(`${BACKEND_URL}/database/customers/migrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

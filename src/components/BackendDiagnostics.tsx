@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import { CheckCircle, XCircle, AlertCircle, RefreshCw, Copy } from 'lucide-react';
 
 import { toast } from 'sonner@2.0.3';
-import { config } from '../backend/config.ts'
+import { BACKEND_URL } from '../utils/config';
 
 export function BackendDiagnostics() {
   const [testing, setTesting] = useState(false);
@@ -21,8 +21,8 @@ export function BackendDiagnostics() {
 
     // Test 1: Can we reach the backend URL at all?
     try {
-      console.log('🔍 TEST 1: Checking basic connectivity to', config.BACKEND_URL);
-      const response = await fetch(`${config.BACKEND_URL}/health`, {
+      console.log('🔍 TEST 1: Checking basic connectivity to', BACKEND_URL);
+      const response = await fetch(`${BACKEND_URL}/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -34,7 +34,7 @@ export function BackendDiagnostics() {
       diagnosticResults.tests.push({
         name: 'Basic Connectivity',
         status: 'success',
-        details: `✅ Successfully connected to ${config.BACKEND_URL}`,
+        details: `✅ Successfully connected to ${BACKEND_URL}`,
         httpStatus: response.status,
         responseData: data
       });
@@ -44,7 +44,7 @@ export function BackendDiagnostics() {
       diagnosticResults.tests.push({
         name: 'Basic Connectivity',
         status: 'failed',
-        details: `❌ Cannot connect to ${config.BACKEND_URL}`,
+        details: `❌ Cannot connect to ${BACKEND_URL}`,
         error: error.message,
         errorType: error.name
       });
@@ -55,7 +55,7 @@ export function BackendDiagnostics() {
     // Test 2: Check CORS headers
     try {
       console.log('🔍 TEST 2: Checking CORS headers');
-      const response = await fetch(`${config.BACKEND_URL}/health`);
+      const response = await fetch(`${BACKEND_URL}/health`);
       const corsHeader = response.headers.get('Access-Control-Allow-Origin');
       
       diagnosticResults.tests.push({
@@ -82,7 +82,7 @@ export function BackendDiagnostics() {
     // Test 3: Check response format
     try {
       console.log('🔍 TEST 3: Checking response format');
-      const response = await fetch(`${config.BACKEND_URL}/health`);
+      const response = await fetch(`${BACKEND_URL}/health`);
       const data = await response.json();
       
       const hasStatus = 'status' in data;
@@ -113,7 +113,7 @@ export function BackendDiagnostics() {
     // Test 4: Check MongoDB status
     try {
       console.log('🔍 TEST 4: Checking MongoDB status');
-      const response = await fetch(`${config.BACKEND_URL}/health`);
+      const response = await fetch(`${BACKEND_URL}/health`);
       const data = await response.json();
       
       const mongoStatus = data.mongodb || 'unknown';
@@ -143,7 +143,7 @@ export function BackendDiagnostics() {
     try {
       console.log('🔍 TEST 5: Checking response time');
       const startTime = performance.now();
-      await fetch(`${config.BACKEND_URL}/health`);
+      await fetch(`${BACKEND_URL}/health`);
       const endTime = performance.now();
       const responseTime = Math.round(endTime - startTime);
       
@@ -220,7 +220,7 @@ export function BackendDiagnostics() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Target Backend:</strong> <code className="bg-gray-100 px-2 py-1 rounded">{config.BACKEND_URL}</code>
+            <strong>Target Backend:</strong> <code className="bg-gray-100 px-2 py-1 rounded">{BACKEND_URL}</code>
           </AlertDescription>
         </Alert>
 

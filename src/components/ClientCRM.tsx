@@ -88,17 +88,7 @@ export function ClientCRM() {
   const completedCount = contacts.filter(c => c.status === "completed").length;
   const inProgressCount = contacts.filter(c => c.status === "in-progress").length;
   
-  // Debug logging for statistics
-  useEffect(() => {
-    console.log('[CRM] Statistics update:', {
-      totalContacts: contacts.length,
-      pendingCount,
-      completedCount,
-      inProgressCount,
-      contactStatuses: contacts.map(c => c.status)
-    });
-  }, [contacts.length, pendingCount, completedCount, inProgressCount]);
-  
+
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
@@ -165,7 +155,6 @@ export function ClientCRM() {
           setCallScript(data.script);
         }
       } catch (error) {
-        console.log('[CRM] Using demo script');
         // Keep default script if loading fails
       } finally {
         setIsLoadingScript(false);
@@ -182,7 +171,6 @@ export function ClientCRM() {
         setIsLoadingContacts(true);
         
         if (!currentUser) {
-          console.log('[CRM] No current user - skipping contact load');
           setIsLoadingContacts(false);
           return;
         }
@@ -215,11 +203,8 @@ export function ClientCRM() {
           return contact;
         });
         
-        console.log(`[CRM] ✅ Loaded ${userContacts.length} assignments for ${currentUser.username}`);
-        console.log('[CRM] Contact statuses:', userContacts.map(c => ({ name: c.name, status: c.status })));
         setContacts(userContacts);
       } catch (error) {
-        console.error('[CRM] Failed to load contacts:', error);
         toast.error('Failed to load contacts. Please check backend connection.');
         setContacts([]);
       }
@@ -251,6 +236,28 @@ export function ClientCRM() {
   const updateContacts = async (updatedContacts: Contact[]) => {
     setContacts(updatedContacts);
     // Note: Individual assignments are updated via markAssignmentCalled() when needed
+  };
+
+  const saveContactsToBackend = async (contactsToSave: Contact[]) => {
+    try {
+      const payload = contactsToSave.map((contact) => ({
+        ...contact,
+        assignedTo: contact.assignedTo ?? currentUser?.id,
+        assignedToName: contact.assignedToName ?? currentUser?.name,
+        assignedAt: contact.assignedAt ?? new Date().toISOString(),
+        createdAt: contact.createdAt ?? new Date().toISOString(),
+        phone: contact.phone?.trim() || "",
+        name: contact.name?.trim() || "Unknown",
+        company: contact.company?.trim() || "",
+      }));
+
+      const result = await backendService.importClients(payload);
+      if (!result?.success) {
+        toast.error("Contacts saved locally but failed to save to backend");
+      }
+    } catch (error) {
+      toast.error("Failed to save contacts to backend");
+    }
   };
 
   const handleDeleteClick = (contact: Contact) => {
@@ -320,7 +327,6 @@ export function ClientCRM() {
       setArchiveDialogOpen(false);
       toast.success(`${contactsToArchive.length} contact(s) archived successfully`);
     } catch (error) {
-      console.error('[CRM] Error archiving contacts:', error);
       toast.error('Failed to archive contacts');
     }
   };
@@ -364,7 +370,6 @@ export function ClientCRM() {
       setSelectedContactIds([]);
       toast.success(`${contactsToRestore.length} contact(s) restored successfully`);
     } catch (error) {
-      console.error('[CRM] Error restoring contacts:', error);
       toast.error('Failed to restore contacts');
     }
   };
@@ -431,7 +436,6 @@ export function ClientCRM() {
       setEditableContact(null);
       toast.success("Call completed and logged!");
     } catch (error) {
-      console.error('[CRM] Error completing call:', error);
       toast.error('Failed to complete call');
     }
   };
@@ -482,7 +486,6 @@ export function ClientCRM() {
       });
       toast.success("Contact information updated in database!");
     } catch (error) {
-      console.error('[CRM] Error updating contact:', error);
       toast.error("Failed to update contact information");
     }
   };
@@ -517,7 +520,6 @@ export function ClientCRM() {
         toast.error(data.error || "Failed to send email");
       }
     } catch (error) {
-      console.error('[CRM] Error sending email:', error);
       toast.error("Failed to send email. Please try again.");
     } finally {
       setIsSendingEmail(false);
@@ -855,7 +857,6 @@ export function ClientCRM() {
         doc.save(`${reportType}-report-${new Date().toISOString().split('T')[0]}.pdf`);
         toast.success("PDF report generated and downloaded!");
       } catch (error) {
-        console.error('Error generating PDF with logo:', error);
         toast.error("Failed to generate PDF report");
       }
     } else if (reportFormat === "pptx") {
@@ -1047,7 +1048,6 @@ export function ClientCRM() {
         pptx.writeFile({ fileName: `${reportType}-report-${new Date().toISOString().split('T')[0]}.pptx` });
         toast.success("PowerPoint report generated and downloaded!");
       } catch (error) {
-        console.error('Error generating PowerPoint with logo:', error);
         toast.error("Failed to generate PowerPoint report");
       }
     } else {
@@ -1171,7 +1171,6 @@ export function ClientCRM() {
         
         toast.success("HTML report generated and downloaded!");
       } catch (error) {
-        console.error('Error generating HTML report with logo:', error);
         toast.error("Failed to generate HTML report");
       }
     }
@@ -1325,7 +1324,7 @@ export function ClientCRM() {
       const result = await backendService.importClients(contactsWithAssignment);
       
       if (!result.success) {
-        console.error('[CRM] Failed to import contacts to central database');
+        toast.error("Contacts saved locally but failed to save to central database");
       }
       
       setContacts(updatedContacts);
@@ -1335,7 +1334,6 @@ export function ClientCRM() {
       
       toast.success(`Successfully imported ${importedContacts.length} contact${importedContacts.length > 1 ? 's' : ''} to database!`);
     } catch (error) {
-      console.error('[CRM] Error saving imported contacts:', error);
       toast.error('Failed to save imported contacts');
     } finally {
       setIsSavingImport(false);
@@ -1380,7 +1378,6 @@ export function ClientCRM() {
       const result = await backendService.importClients([contact]);
 
       if (!result.success) {
-        console.error('[CRM] Failed to add contact to central database');
         toast.error("Contact added locally but failed to save to central database");
       } else {
         toast.success(`Contact "${newContact.name}" added to database!`);
@@ -1399,7 +1396,6 @@ export function ClientCRM() {
       
       setIsAddContactDialogOpen(false);
     } catch (error) {
-      console.error('[CRM] Error adding contact:', error);
       toast.error("Failed to add contact");
     }
   };
