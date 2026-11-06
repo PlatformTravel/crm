@@ -40,3 +40,5 @@ Thumbs.db
 # Others
 *.log
 *.bak
+nginx-backend-proxy.conf
+*.backup*

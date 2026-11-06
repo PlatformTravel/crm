@@ -72,6 +72,7 @@ export async function handleRequest(req: any): Promise<Response> {
   }
 
   // authentication / audit
+  if (path === '/users/register' && method === 'POST') return authController.registerAgent(req);
   if (path === '/users/login' && method === 'POST') return authController.login(req);
   if (path === '/login-audit' && method === 'GET') return auditController.getLoginAudit(req);
   if (path === '/login-audit' && method === 'POST') return auditController.recordLoginAttempt(req);

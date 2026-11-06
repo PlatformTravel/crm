@@ -102,7 +102,7 @@ export function Signup({ onBack, onSignupSuccess }: SignupProps) {
         );
         onSignupSuccess();
       } else {
-        toast.error(response.message || "Registration failed. Please try again.");
+        toast.error(response.error || response.message || "Registration failed. Please try again.");
       }
     } catch (error: any) {
       console.error("Signup error:", error);
